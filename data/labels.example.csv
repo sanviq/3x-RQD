@@ -1,0 +1,4 @@
+image_path,quality_score,route_id
+images/road_good_01.jpg,90,route_A
+images/road_fair_01.jpg,60,route_B
+images/road_poor_01.jpg,25,route_C
