@@ -1,0 +1,451 @@
+[
+  {
+    "image": "China_Drone_China_Drone_000008.jpg",
+    "yolo_labels": "China_Drone_China_Drone_000008.txt",
+    "original_xml": "China_Drone_China_Drone_000008.original.xml",
+    "country": "China_Drone",
+    "damage_codes": [
+      "D10"
+    ],
+    "source_image": "China_Drone/train/images/China_Drone_000008.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "a9754681705e659d7ba568ce813d40029bf4bb8cdd24bca88df510cb94bd3b46",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_Drone_China_Drone_000035.jpg",
+    "yolo_labels": "China_Drone_China_Drone_000035.txt",
+    "original_xml": "China_Drone_China_Drone_000035.original.xml",
+    "country": "China_Drone",
+    "damage_codes": [
+      "D00",
+      "D20"
+    ],
+    "source_image": "China_Drone/train/images/China_Drone_000035.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "913a8eed2525abb54325cb687fc421c24967a8a928cfec523546f98390d08fe2",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_Drone_China_Drone_000048.jpg",
+    "yolo_labels": "China_Drone_China_Drone_000048.txt",
+    "original_xml": "China_Drone_China_Drone_000048.original.xml",
+    "country": "China_Drone",
+    "damage_codes": [
+      "D40"
+    ],
+    "source_image": "China_Drone/train/images/China_Drone_000048.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "dd3540d4a669aed5007bb9ca51e635f521a5d2aad727d6e468d7dacff4b693fb",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_Drone_China_Drone_000170.jpg",
+    "yolo_labels": "China_Drone_China_Drone_000170.txt",
+    "original_xml": "China_Drone_China_Drone_000170.original.xml",
+    "country": "China_Drone",
+    "damage_codes": [
+      "negative"
+    ],
+    "source_image": "China_Drone/train/images/China_Drone_000170.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "b2e6461b1a5ecce6b19bf80d60b3eb209da65db5c5d40238852d34e126423cbf",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_MotorBike_China_MotorBike_000103.jpg",
+    "yolo_labels": "China_MotorBike_China_MotorBike_000103.txt",
+    "original_xml": "China_MotorBike_China_MotorBike_000103.original.xml",
+    "country": "China_MotorBike",
+    "damage_codes": [
+      "D10"
+    ],
+    "source_image": "China_MotorBike/train/images/China_MotorBike_000103.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "6997321f6b719121ae55c33a2a24c97fa7290820240fb31810b6d0a20d7f396e",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_MotorBike_China_MotorBike_000112.jpg",
+    "yolo_labels": "China_MotorBike_China_MotorBike_000112.txt",
+    "original_xml": "China_MotorBike_China_MotorBike_000112.original.xml",
+    "country": "China_MotorBike",
+    "damage_codes": [
+      "D00",
+      "D10"
+    ],
+    "source_image": "China_MotorBike/train/images/China_MotorBike_000112.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "fbda6cd1e16fa7ff4496de80bf0b22838bdde3c13d11a72ef5c514c356ebdb1a",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_MotorBike_China_MotorBike_000113.jpg",
+    "yolo_labels": "China_MotorBike_China_MotorBike_000113.txt",
+    "original_xml": "China_MotorBike_China_MotorBike_000113.original.xml",
+    "country": "China_MotorBike",
+    "damage_codes": [
+      "D40"
+    ],
+    "source_image": "China_MotorBike/train/images/China_MotorBike_000113.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "5b5829b4028e1798ba84485243a15bb7ad6f2216d452705a15193a8a274cd9c1",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "China_MotorBike_China_MotorBike_000122.jpg",
+    "yolo_labels": "China_MotorBike_China_MotorBike_000122.txt",
+    "original_xml": "China_MotorBike_China_MotorBike_000122.original.xml",
+    "country": "China_MotorBike",
+    "damage_codes": [
+      "D00",
+      "D20"
+    ],
+    "source_image": "China_MotorBike/train/images/China_MotorBike_000122.jpg",
+    "original_size": [
+      512,
+      512
+    ],
+    "original_sha256": "16cac23436ebace2420f27f61198a16e68baa0926f0d135476ae753515f58599",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Czech_Czech_000010.jpg",
+    "yolo_labels": "Czech_Czech_000010.txt",
+    "original_xml": "Czech_Czech_000010.original.xml",
+    "country": "Czech",
+    "damage_codes": [
+      "D10",
+      "D40"
+    ],
+    "source_image": "Czech/train/images/Czech_000010.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "fc5031b3c928f33ec72954918ce5b04b82742f2b082fa5df6b7ee7b81e6cc4af",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Czech_Czech_000041.jpg",
+    "yolo_labels": "Czech_Czech_000041.txt",
+    "original_xml": "Czech_Czech_000041.original.xml",
+    "country": "Czech",
+    "damage_codes": [
+      "D20"
+    ],
+    "source_image": "Czech/train/images/Czech_000041.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "b24e0fa1e9e7dc5cdc3bcc6acf1d7ca0f9c7c0d7be792305fc59d027e8c2c2b1",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Czech_Czech_000055.jpg",
+    "yolo_labels": "Czech_Czech_000055.txt",
+    "original_xml": "Czech_Czech_000055.original.xml",
+    "country": "Czech",
+    "damage_codes": [
+      "D00",
+      "D10"
+    ],
+    "source_image": "Czech/train/images/Czech_000055.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "0d649a01bf38f34d74d36b7e17a5db4ba20a60063090d4c7c9aff468e0ec6033",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Czech_Czech_000060.jpg",
+    "yolo_labels": "Czech_Czech_000060.txt",
+    "original_xml": "Czech_Czech_000060.original.xml",
+    "country": "Czech",
+    "damage_codes": [
+      "negative"
+    ],
+    "source_image": "Czech/train/images/Czech_000060.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "09ab40982dd24d5c3e6d6b96b61bdccd5fbd031f9ceba24cd43f393b69c7f587",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "India_India_000114.jpg",
+    "yolo_labels": "India_India_000114.txt",
+    "original_xml": "India_India_000114.original.xml",
+    "country": "India",
+    "damage_codes": [
+      "D20"
+    ],
+    "source_image": "India/train/images/India_000114.jpg",
+    "original_size": [
+      720,
+      720
+    ],
+    "original_sha256": "6d874c84420e491daf3e8969a626aa67351a36fafd46f158adda9a9cbb44acec",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "India_India_000115.jpg",
+    "yolo_labels": "India_India_000115.txt",
+    "original_xml": "India_India_000115.original.xml",
+    "country": "India",
+    "damage_codes": [
+      "D10",
+      "D40"
+    ],
+    "source_image": "India/train/images/India_000115.jpg",
+    "original_size": [
+      720,
+      720
+    ],
+    "original_sha256": "e5779074d2eb88d84c668444db5291cfb68eac2a4c7d6c68c2f639defe2ce670",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "India_India_000151.jpg",
+    "yolo_labels": "India_India_000151.txt",
+    "original_xml": "India_India_000151.original.xml",
+    "country": "India",
+    "damage_codes": [
+      "negative"
+    ],
+    "source_image": "India/train/images/India_000151.jpg",
+    "original_size": [
+      720,
+      720
+    ],
+    "original_sha256": "6df6e46d999851d7ade2b2ac6b1529fd3c01b790a4d12d1aaab9fbeaca369226",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "India_India_000436.jpg",
+    "yolo_labels": "India_India_000436.txt",
+    "original_xml": "India_India_000436.original.xml",
+    "country": "India",
+    "damage_codes": [
+      "D00",
+      "D20"
+    ],
+    "source_image": "India/train/images/India_000436.jpg",
+    "original_size": [
+      720,
+      720
+    ],
+    "original_sha256": "749ee04a4d829ddf3e5aded1f8930ebd0c1bae81dfb26cbe9fc75cab5f2363cf",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Japan_Japan_000000.jpg",
+    "yolo_labels": "Japan_Japan_000000.txt",
+    "original_xml": "Japan_Japan_000000.original.xml",
+    "country": "Japan",
+    "damage_codes": [
+      "D00",
+      "D10",
+      "D20",
+      "D40"
+    ],
+    "source_image": "Japan/train/images/Japan_000000.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "d3f4b171ecac94b929ef5bb3fad23bad44c98b3bd18aad4ac5ebaea760ce3f9c",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Japan_Japan_000637.jpg",
+    "yolo_labels": "Japan_Japan_000637.txt",
+    "original_xml": "Japan_Japan_000637.original.xml",
+    "country": "Japan",
+    "damage_codes": [
+      "negative"
+    ],
+    "source_image": "Japan/train/images/Japan_000637.jpg",
+    "original_size": [
+      600,
+      600
+    ],
+    "original_sha256": "3f900b24797d6dcf244361e05558b02f37a7effb3c5ad871a3f07ea2b1a91159",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Norway_Norway_000000.jpg",
+    "yolo_labels": "Norway_Norway_000000.txt",
+    "original_xml": "Norway_Norway_000000.original.xml",
+    "country": "Norway",
+    "damage_codes": [
+      "D00",
+      "D20"
+    ],
+    "source_image": "Norway/train/images/Norway_000000.jpg",
+    "original_size": [
+      3650,
+      2044
+    ],
+    "original_sha256": "07661d3a0842a5ff31b3403b45382cc6abcb453221fce2ea7ebcb8292cba149b",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Norway_Norway_000009.jpg",
+    "yolo_labels": "Norway_Norway_000009.txt",
+    "original_xml": "Norway_Norway_000009.original.xml",
+    "country": "Norway",
+    "damage_codes": [
+      "D00",
+      "D20",
+      "D40"
+    ],
+    "source_image": "Norway/train/images/Norway_000009.jpg",
+    "original_size": [
+      3650,
+      2044
+    ],
+    "original_sha256": "af97ab298220d5ef9365d32751d4d1a41f28f586c93ecf5d8665e1ae67fa5471",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Norway_Norway_000102.jpg",
+    "yolo_labels": "Norway_Norway_000102.txt",
+    "original_xml": "Norway_Norway_000102.original.xml",
+    "country": "Norway",
+    "damage_codes": [
+      "D00",
+      "D10"
+    ],
+    "source_image": "Norway/train/images/Norway_000102.jpg",
+    "original_size": [
+      3643,
+      2041
+    ],
+    "original_sha256": "3309dd26857561b0f8440cd573f7c6d5e3697c79a17f8539a5148ecac9d33dd1",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "Norway_Norway_000113.jpg",
+    "yolo_labels": "Norway_Norway_000113.txt",
+    "original_xml": "Norway_Norway_000113.original.xml",
+    "country": "Norway",
+    "damage_codes": [
+      "negative"
+    ],
+    "source_image": "Norway/train/images/Norway_000113.jpg",
+    "original_size": [
+      3643,
+      2041
+    ],
+    "original_sha256": "897c2a6cdb3b263fd44ccba9c7a3e4eb15d832ac08f142786853bf913f4bb504",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "United_States_United_States_000056.jpg",
+    "yolo_labels": "United_States_United_States_000056.txt",
+    "original_xml": "United_States_United_States_000056.original.xml",
+    "country": "United_States",
+    "damage_codes": [
+      "D00",
+      "D20"
+    ],
+    "source_image": "United_States/train/images/United_States_000056.jpg",
+    "original_size": [
+      640,
+      640
+    ],
+    "original_sha256": "928b4909c8c76dd075c88f5d16457c5294f55ed8cd79a94d45e1b11c8e957410",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  },
+  {
+    "image": "United_States_United_States_000062.jpg",
+    "yolo_labels": "United_States_United_States_000062.txt",
+    "original_xml": "United_States_United_States_000062.original.xml",
+    "country": "United_States",
+    "damage_codes": [
+      "D00",
+      "D10",
+      "D40"
+    ],
+    "source_image": "United_States/train/images/United_States_000062.jpg",
+    "original_size": [
+      640,
+      640
+    ],
+    "original_sha256": "a1b6b1ff9378b08c96b844237b2fdc061157626758a95b7a828403772133e720",
+    "change": "JPEG preview resized to fit 800x800, quality 88. Original XML is unchanged; YOLO boxes remain normalized.",
+    "split": "train",
+    "license": "CC BY 4.0"
+  }
+]
