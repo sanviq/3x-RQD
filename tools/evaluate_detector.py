@@ -51,6 +51,7 @@ def main():
     records=[r for r in manifest if r['split']==a.split]
     index={str((dataset.parent/r['prepared_image']).resolve()):r for r in records}
     per_class={code:{'tp':0,'fp':0,'fn':0} for code in CLASSES}; totals=Counter(); examples=Counter()
+    country_counts={}
     (output/'examples').mkdir()
     with (output/'predictions.jsonl').open('x') as f:
         # A directory uses streaming file loading; a Python list can eagerly load
@@ -67,10 +68,13 @@ def main():
             pred=[{'class_id':int(c),'confidence':float(score),'bbox':box.tolist()}
                   for c,score,box in zip(class_ids,confidences,coordinates)]
             match=diagnostic_matches(truth,pred,a.confidence)
+            country=country_counts.setdefault(r['country'],{'images':0,'tp':0,'fp':0,'fn':0})
+            country['images']+=1
             for kind in ('tp','fp','fn'):
                 totals[kind]+=len(match[kind])
+                country[kind]+=len(match[kind])
                 for item in match[kind]:per_class[list(CLASSES)[item['class_id']]][kind]+=1
-            f.write(json.dumps({'source_image':r['source_image'],'image_sha256':r['image_sha256'],
+            f.write(json.dumps({'source_image':r['source_image'],'country':r['country'],'image_sha256':r['image_sha256'],
                                 'ground_truth':truth,'predictions':pred,'diagnostic':match})+'\n')
             kinds=[k for k in ('fp','fn') if match[k]] or ['representative']
             for kind in kinds:
@@ -86,11 +90,15 @@ def main():
                 cv2.imwrite(str(output/'examples'/f'{kind}-{examples[kind]:02d}.jpg'),image);examples[kind]+=1
         if seen!=set(index):raise ValueError('Prediction inventory did not match the evaluated split')
     t=totals;precision=t['tp']/max(1,t['tp']+t['fp']);recall=t['tp']/max(1,t['tp']+t['fn'])
+    for counts in country_counts.values():
+        p=counts['tp']/max(1,counts['tp']+counts['fp']);r=counts['tp']/max(1,counts['tp']+counts['fn'])
+        counts.update(precision=p,recall=r,f1=2*p*r/max(1e-12,p+r))
     report={'split':a.split,'checkpoint_sha256':checksum,'dataset_manifest_sha256':fingerprint,'images':len(records),
             'ultralytics_metrics':{k:float(v) for k,v in metrics.results_dict.items()},
             'per_class_metrics':{list(CLASSES)[int(c)]:{'precision':float(metrics.box.p[i]),'recall':float(metrics.box.r[i]),
                 'f1':float(metrics.box.f1[i]),'map50':float(metrics.box.ap50[i]),'map50_95':float(metrics.box.ap[i])} for i,c in enumerate(metrics.box.ap_class_index)},
             'class_distribution':{code:v['tp']+v['fn'] for code,v in per_class.items()},
+            'country_view_diagnostics':country_counts,
             'diagnostic':{'confidence':a.confidence,'iou':.5,'precision':precision,'recall':recall,'f1':2*precision*recall/max(1e-12,precision+recall),**dict(t),'per_class_counts':per_class},
             'notice':'Internal labelled holdout; not official challenge test accuracy. Ultralytics P/R use its operating-point convention; diagnostic P/R use the explicit threshold. No model improvement claim without a matched held-out baseline comparison.'}
     (output/'report.json').write_text(json.dumps(report,indent=2))

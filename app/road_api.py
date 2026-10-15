@@ -266,3 +266,7 @@ from app.twin import build_twin
 @router.post('/twin')
 def digital_twin(req: AssessmentRequest):
     return safe_call(build_twin, req)
+
+# Dataset files are served individually; never loaded into frontend bundles.
+from app.dataset_examples import router as dataset_router
+router.include_router(dataset_router)

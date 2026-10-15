@@ -3,6 +3,7 @@ import { Badge, Note, PanelTitle } from './UI';
 import { Icon } from './Icon';
 import { InclinationTool } from './InclinationTool';
 import { RoadMesh } from './RoadMesh';
+import { DatasetGallery } from './DatasetGallery';
 import { number, percent as formatPercent, downloadJson } from '../utils/formatters';
 import { analyzeVideo, baselineFor, calculateScenario, detectionForm, detectorStatus, inspectDefects, runDriving, saveRoad, startTracking, stopTracking } from '../api/roadHealth';
 import type { DetectionResult, DetectionSettings, DetectorStatus, VideoReport } from '../api/roadHealth';
@@ -10,7 +11,10 @@ import './backend.css';
 
 const percent=(value:number|null|undefined)=>value==null?'Not available':formatPercent(value);
 type ResultView='original'|'detections'|'segmentation'|'heatmap';
-export function DetectionWorkspace({image,scale,pitch}:{image?:File;scale:string;pitch:string}){
+export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:File;scale:string;pitch:string}){
+  const [sampleImage,setSampleImage]=useState<File|null>(null);
+  const image=sampleImage??uploadedImage;
+  useEffect(()=>setSampleImage(null),[uploadedImage]);
   const [settings,setSettings]=useState<DetectionSettings>({mode:'demo',confidence:.35,resolution:640});
   const [roll,setRoll]=useState('');
   const [inclination,setInclination]=useState<Record<string,unknown>|null>(null);
@@ -47,7 +51,7 @@ export function DetectionWorkspace({image,scale,pitch}:{image?:File;scale:string
   };
   useEffect(()=>{mounted.current=true;const c=new AbortController();void detectorStatus(c.signal).then(setStatus).catch(()=>{});return()=>{mounted.current=false;revision.current++;c.abort();request.current?.abort();if(interval.current)clearInterval(interval.current);media.current?.getTracks().forEach(t=>t.stop());if(session.current)void stopTracking(session.current).catch(()=>{})}},[]);
   useEffect(()=>{stop();setData(null);setFrames([]);setError('');setBusy(false)},[image,scale,pitch,roll,settings,inclination]);
-  const options:DetectionSettings={...settings,scale,pitch,roll,inclination:inclination||undefined};
+  const options:DetectionSettings={...settings,scale:sampleImage?'':scale,pitch:sampleImage?'':pitch,roll:sampleImage?'':roll,inclination:sampleImage?undefined:inclination||undefined};
   const cancel=()=>{stop();setNotice('Stopped. Server-side work already started may finish; late responses are ignored.')};
   const accept=(result:DetectionResult,captured:DetectionSettings)=>{setData(result);setSnapshot(captured);setActive('');setView('detections')};
   const run=async()=>{
@@ -90,6 +94,8 @@ export function DetectionWorkspace({image,scale,pitch}:{image?:File;scale:string
   };
   const chooseSource=(next:typeof source)=>{stop();setSource(next);setData(null);setFrames([]);setError('')};
   return <section className="backend-workspace results-stack" aria-label="Connected road defect service">
+    <DatasetGallery onSelect={setSampleImage}/>
+    {sampleImage&&<Note>Real dataset preview selected: {sampleImage.name}. Existing capture calibration and IMU inputs are not applied to this unrelated image. Detection mode still controls whether results are illustrative fixtures or actual model predictions. <button className="text-button" onClick={()=>setSampleImage(null)}>Return to uploaded capture</button></Note>}
     <section className="panel"><PanelTitle title="Road-defect analysis" eyebrow="CONNECTED BACKEND · ADDITIONAL WORKFLOW"><Badge tone={status?.model.configured?'good':'lavender'}>{status?.model.configured?'Road weights configured':'Explicit demo mode available'}</Badge></PanelTitle>
       <p className="fine-print">This complements the granular surface inspection above. It supports optional YOLO road-defect models, video tracking, heatmaps, sensor inputs, repair calculations and local GPS records.</p>
       <Note>{settings.mode==='demo'?'Demo annotations are fixed illustrative fixtures, not detections from an uploaded capture. Confidence values are synthetic. Real inference requires trusted road-specific weights.':'Local model mode uses configured road-defect weights. Severity and road scores are unvalidated estimates; a generic COCO detector is not suitable.'}</Note>

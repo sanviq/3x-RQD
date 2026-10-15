@@ -12,7 +12,7 @@ Open http://127.0.0.1:8000 (API docs: http://127.0.0.1:8000/docs). Demo mode wor
 
 See [local integration, API, model setup and limitations](docs/IMPLEMENTATION.md). The original surface-analysis endpoint and its calibration contract are preserved below.
 
-For detector development, see [RDD2022 provenance, team download, preparation, training and evaluation](docs/datasets/README.md). Dataset images and checkpoints stay outside Git; the repository records the official source and reproducible pipeline. Downloading data does not replace demo mode with a trained detector.
+For detector development, see [RDD2022 provenance, team download, preparation, training and evaluation](docs/datasets/README.md). The repository includes a tiny attributed real-data gallery; the compact training dataset and checkpoints are GitHub Release assets. See [the compact multinational workflow](docs/datasets/COMPACT.md). Downloading data does not replace demo mode with a trained detector.
 
 ---
 

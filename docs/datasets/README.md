@@ -1,3 +1,5 @@
+**Current workflow:** [compact real multinational dataset, GitHub access and approved training](COMPACT.md). The full-archive instructions below are optional; the full download was stopped in favour of the compact subset.
+
 # RDD2022 provenance and team access
 
 The data comes from the [official RDD2022 Figshare release](https://figshare.com/articles/dataset/21431547), DOI `10.6084/m9.figshare.21431547.v1`, licensed CC BY 4.0. The publisher's exact file size, MD5, country subsets, class mapping and citation are recorded in [RDD2022.source.json](RDD2022.source.json). Cite the dataset authors when using the data or reporting results.

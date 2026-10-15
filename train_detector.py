@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 
 from tools.prepare_rdd2022 import CLASSES, file_sha256
 
@@ -74,6 +75,8 @@ def main():
     config={**vars(a),'dataset':str(path),'dataset_manifest_sha256':fingerprint,'checkpoint_sha256':file_sha256(checkpoint),
             'versions':{k:importlib.metadata.version(k) for k in ('ultralytics','torch','torchvision','numpy','Pillow')},
             'python':sys.version,'optimizer':'AdamW','class_mapping':CLASSES}
+    revision=subprocess.run(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parent,capture_output=True,text=True)
+    config['source_git_commit']=revision.stdout.strip() if revision.returncode==0 else None
     config={k:str(v) if isinstance(v,Path) else v for k,v in config.items()}
     if a.resume:
         previous=json.loads((output/'reproduction.json').read_text())
