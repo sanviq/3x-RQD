@@ -1,0 +1,27 @@
+{
+  "epochs": 50,
+  "imgsz": 640,
+  "batch": 2,
+  "lr": 0.001,
+  "seed": 42,
+  "device": "mps",
+  "workers": 0,
+  "dataset_manifest_sha256": "99df925d4944dfd3902db6f2257a82897d9751781eed9ea2ca96dfda4a39ba42",
+  "checkpoint_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+  "versions": {
+    "ultralytics": "8.4.177",
+    "torch": "2.14.1",
+    "torchvision": "0.29.1",
+    "numpy": "2.5.4",
+    "Pillow": "12.3.0"
+  },
+  "python": "3.12.13 (main, Mar  3 2026, 12:39:30) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "optimizer": "AdamW",
+  "class_mapping": {
+    "D00": 0,
+    "D10": 1,
+    "D20": 2,
+    "D40": 3
+  },
+  "source_git_commit": "603186be14a9f346625ac4d6bbb5ca8e6190c135"
+}
