@@ -142,13 +142,48 @@ def assign_splits(records, groups, seed=42):
     counts = np.zeros_like(targets)
     denominator = np.maximum(total,1)
     result = {}
+    assigned = []
     for group, v, _ in vectors:
         errors=[]
         for split in range(3):
             candidate = counts.copy(); candidate[split] += v
             errors.append(np.sum((candidate-targets)**2/denominator))
         chosen = int(np.argmin(errors)); counts[chosen] += v
+        assigned.append(chosen)
         for i in group: result[i] = ('train','val','test')[chosen]
+    # A single large-first pass can fill training with early country groups,
+    # leaving later, smaller countries to supply the holdouts. Refine complete
+    # group placements after all countries are represented in the objective.
+    for _ in range(30):
+        moved = False
+        for index,(group,v,_) in enumerate(vectors):
+            old = assigned[index]
+            best = old
+            error = np.sum((counts-targets)**2/denominator)
+            for split in range(3):
+                if split == old or counts[old,0] <= v[0]: continue
+                candidate = counts.copy();candidate[old] -= v;candidate[split] += v
+                value = np.sum((candidate-targets)**2/denominator)
+                if value < error-1e-9:best,error = split,value
+            if best != old:
+                counts[old] -= v;counts[best] += v;assigned[index] = best;moved = True
+        if not moved:break
+    # Exchange whole groups within a country as well: single-group moves can
+    # get stuck with one large holdout group and an almost-empty other holdout.
+    for _ in range(5):
+        swapped = False
+        for i,(_,left,_) in enumerate(vectors):
+            for j in range(i+1,len(vectors)):
+                right=vectors[j][1];a,b=assigned[i],assigned[j]
+                if a==b or not np.any(left[5:]*right[5:]):continue
+                delta=left-right
+                before=np.sum(((counts[a]-targets[a])**2+(counts[b]-targets[b])**2)/denominator)
+                after=np.sum(((counts[a]-delta-targets[a])**2+(counts[b]+delta-targets[b])**2)/denominator)
+                if after<before-1e-9:
+                    counts[a]-=delta;counts[b]+=delta;assigned[i],assigned[j]=b,a;swapped=True
+        if not swapped:break
+    for (group,_,_),split in zip(vectors,assigned):
+        for i in group:result[i] = ('train','val','test')[split]
     if len(set(result.values())) < 3:
         raise ValueError('Not enough independent groups for three nonempty splits')
     return result

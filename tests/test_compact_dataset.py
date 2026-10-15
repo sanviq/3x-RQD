@@ -127,3 +127,21 @@ def test_release_upload_preserves_a_different_existing_asset(tmp_path,monkeypatc
     inventory['assets'][0]['digest']='sha256:'+'0'*64
     with pytest.raises(ValueError,match='preserving'):github_assets.upload_assets('fixture',[file])
     assert not calls
+
+
+def test_group_allocator_keeps_large_early_country_groups_in_both_holdouts():
+    from tools.prepare_rdd2022 import assign_splits
+    records=[];groups=[]
+    for country in ('A','B','C','D','E','F','G'):
+        sizes=[66,43,19,15,14,12,11,11,10,9,9,8,7,6,6,4] if country=='A' else [5]*50
+        for size in sizes:
+            group=[]
+            for _ in range(size):
+                i=len(records);group.append(i);records.append({'country':country,'labels':[(i%4,.5,.5,.1,.1)]})
+            groups.append(group)
+    result=assign_splits(records,groups)
+    for group in groups:assert len({result[i] for i in group})==1
+    for country in ('A','B','C','D','E','F','G'):
+        for split in ('train','val','test'):
+            assert sum(r['country']==country and result[i]==split for i,r in enumerate(records))>=10
+    assert result==assign_splits(records,groups)
