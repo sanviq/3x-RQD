@@ -140,3 +140,30 @@ def test_confidence_is_not_the_quality_score():
     from app.assessment import Defect,assess
     defect=Defect(id='a',class_name='pothole',confidence=.95,bbox=(.1,.1,.4,.4),severity=.8)
     assert assess([defect])['score']==assess([defect.model_copy(update={'confidence':.3})])['score']
+
+
+def test_download_resumes_existing_prefix_and_verifies_publisher_checksum(tmp_path,monkeypatch):
+    import hashlib
+    import re
+    from tools import download_rdd2022 as downloader
+    content=b'official fixture archive bytes, not a real dataset'
+    monkeypatch.setattr(downloader,'SIZE',len(content))
+    monkeypatch.setattr(downloader,'MD5',hashlib.md5(content).hexdigest())
+    monkeypatch.setattr(downloader,'NAME','fixture.zip')
+    (tmp_path/'fixture.zip.part').write_bytes(content[:8])
+    requested=[]
+    class Response(io.BytesIO):
+        status=206
+        def __init__(self,start,end):
+            super().__init__(content[start:end+1]);self.headers={'Content-Range':f'bytes {start}-{end}/{len(content)}'}
+    def urlopen(request,timeout):
+        start,end=map(int,re.fullmatch(r'bytes=(\d+)-(\d+)',request.get_header('Range')).groups())
+        requested.append((start,end));return Response(start,end)
+    monkeypatch.setattr(downloader.urllib.request,'urlopen',urlopen)
+    target=downloader.download(tmp_path,workers=1)
+    assert target.read_bytes()==content and requested==[(8,len(content)-1)]
+    downloader.download(tmp_path,workers=1)
+    assert len(requested)==1
+    target.write_bytes(b'corrupt')
+    with pytest.raises(ValueError,match='preserving'):downloader.download(tmp_path,workers=1)
+    assert target.read_bytes()==b'corrupt'

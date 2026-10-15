@@ -72,3 +72,20 @@ ROAD_HEALTH_MODEL="$HOME/Datasets/RDD2022/runs/rdd-v1/weights/best.pt" ./scripts
 The existing endpoint contracts and teammate UI are retained. D00/D10/D20 remain compatible `class_name=crack`, with additive `detection_code` and `detection_label` preserving exact predictions; D40 maps to `pothole`. Boxes and confidence come from inference. Detection confidence is not road quality. With no detections or low mean confidence, model inspection returns `score=null`, `band=Unassessable`, and requests repeat capture. Score weights and severity remain unvalidated policy estimates even after detector training. This four-class model does not validate ravelling, friction, material composition, depth or overall road safety.
 
 The application remains in demo mode until that gate is passed. No checkpoint is automatically promoted by downloading, preparing, benchmarking or training.
+
+# Current local pilot
+
+The checked-in [India audit summary](audits/india-pilot.json) covers only the India member extracted from already downloaded full-archive ranges (embedded CRC verified). It prepared 6,648 labelled pairs: 5,330 train, 630 validation and 688 held-out test; 1,959 unlabelled official test images were excluded from accuracy evaluation. The 1,058 excluded pairs mostly contain annotation classes outside the four requested classes. Counts of all original class labels and first-failure exclusion reasons are in the audit. Whole images with unsupported annotations are excluded to avoid treating their unmodelled damage as negative examples. D10 is rare in this subset (63 retained boxes); an India-only detector would need careful per-class review.
+
+The [compute pilot](audits/india-compute-pilot.json) ran two epochs on 96 training and 32 validation images with the pretrained YOLOv8n initialization, MPS, 640 pixels and batch 2. Its warm second training epoch took about 5.75 seconds, extrapolating to 4.43 hours for 50 epochs on the prepared India training split **before** validation, checkpoints and thermal effects. This is not the full multinational estimate or a model-quality result. MPS emitted nondeterministic-kernel warnings despite a fixed seed. The held-out test was not evaluated. Benchmark checkpoints remain outside Git and are not configured in the application.
+
+For a long download, a separate optional continuation command waits for the checksum-verified final archive, prepares the full dataset, writes local reports and **stops before training**:
+
+```sh
+.venv-roadhealth/bin/python -m tools.continue_rdd_preparation \
+  --archive "$HOME/Datasets/RDD2022/original/RDD2022_released_through_CRDDC2022.zip" \
+  --output "$HOME/Datasets/RDD2022/prepared-multinational-v1" \
+  --report-directory "$HOME/Datasets/RDD2022/reports"
+```
+
+Read `reports/preparation-status.json` for the durable status and `reports/multinational-audit-summary.json` when complete. This continuation never starts training, configures a model, or pushes GitHub changes. Review the real full audit before publishing its summary and requesting long-run approval.

@@ -1,0 +1,13 @@
+# Recorded local checks — partial dataset, no production model
+
+These reports contain metadata and measured results, not images or checkpoints.
+
+- `india-pilot.json`: genuine matching-pair audit of the India member of the official archive. The member CRC was verified against the enclosing ZIP. The full parent download was still incomplete when this report was created. It prepared 6,648 pairs, with 5,330/630/688 internal train/validation/test images. It kept 1,959 unlabelled official test images out of evaluation and excluded 1,058 pairs. Most exclusions involve extra labels such as D44, D01 and D43; two involve invalid boxes. Exclusion reasons are first failures per pair, not an exhaustive count of every fault in an excluded XML. No missing XML or orphan XML was found in this subset. Counts of valid pairs do not certify human annotation accuracy.
+- `india-compute-pilot.json`: two-epoch resource pilot using 96 training and 32 validation images. Warm epoch time was 5.75 seconds at 640 pixels, batch 2, MPS on this M3. Its 4.43-hour estimate for 50 India-only training epochs excludes validation, checkpoints and thermal effects; it is not a full-dataset estimate. Fixed seeds do not make MPS kernels bit-reproducible.
+- `benchmark-validation-smoke.json`: actual validation results of those two-epoch pilot weights on 630 India validation images. mAP50 was 0.000812 and mAP50:95 was 0.000173; at diagnostic confidence .25 and IoU .5, there were 0 true positives, 75 false positives and 598 false negatives. This checkpoint is unsuitable for production and was not configured in Road Health. There is no matched road-trained baseline or improvement claim. The held-out test was not evaluated.
+
+The retained India subset has 1,418 D00, 63 D10, 1,634 D20 and 2,955 D40 boxes. D10 support is especially small: 7 validation and 5 test boxes. Per-class results from this subset would need substantial caution. The full multinational audit remains necessary before final training design.
+
+Local smoke artifacts include PR curves, native Ultralytics confusion matrices, 630 raw prediction rows and 36 annotated examples. Green boxes are ground truth; red boxes are predictions at the diagnostic confidence. Native Ultralytics plot thresholds and operating-point P/R are separate from the explicit-threshold diagnostic counts. Images stay with the local data; they are not copied into Git.
+
+Validation of the code at this stage: 31 Python tests, 31 frontend tests, 10 frontend core checks and 8 API checks passed; the TypeScript/production build and live API metadata/scenario round trip passed. Existing dependency deprecation warnings remain. The full training, final held-out evaluation and production checkpoint integration are pending.
