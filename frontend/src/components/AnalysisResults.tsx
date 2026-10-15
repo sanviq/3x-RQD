@@ -30,6 +30,7 @@ export function AnalysisResults({result,demo=false}:{result:AnalysisResponse;dem
       <Metric label="Visible chip coverage" value={percent(result.features.chip_coverage_fraction)}/>
       <Metric label="Spatial coverage uniformity" value={percent(result.features.packing_uniformity)}/>
       <Metric label="Potential dark linear area" value={percent(result.features.dark_linear_fraction)}/>
+      {result.large_gap_fraction_proxy!==undefined&&<Metric label="Large-gap fraction · visual proxy" value={result.large_gap_fraction_proxy===null?'Not available':percent(result.large_gap_fraction_proxy)}/>}
     </div><p className="fine-print">Visible coverage is not volumetric compaction. Dark regions can include shadows, joints, and aggregate boundaries.</p></section>
     <section className="panel"><PanelTitle title="Calibrated measurements"/><div className="measurement-grid">
       <Metric label="Original crop area" value={number(physical.area_sq_ft)} unit={physical.area_sq_ft===null?'':'ft²'}/>

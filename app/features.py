@@ -136,6 +136,8 @@ def extract_features(image: np.ndarray, mm_per_pixel: float | None = None):
     if not regions:
         notes.append("No chip candidates detected; use a sharper close-up or validate segmentation settings.")
     return {"features": features, "physical_measurements": physical,
-            "chip_candidate_count": len(regions), "warnings": notes,
+            "chip_candidate_count": len(regions),
+            "large_gap_fraction_proxy": float(np.mean(gaps > diameters.mean())) if len(gaps) and len(diameters) else None,
+            "warnings": notes,
             "image": {"original_width": original_w, "original_height": original_h,
                       "processed_width": width, "processed_height": height}}, overlay

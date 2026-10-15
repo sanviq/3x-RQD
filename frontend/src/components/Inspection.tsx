@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { DetectionWorkspace } from './DetectionWorkspace';
 import type { AnalysisController } from '../hooks/useAnalysis';
 import { Icon } from './Icon';
 import { MediaCapture } from './MediaCapture';
@@ -55,5 +56,6 @@ export function Inspection({analysis}:{analysis:AnalysisController}) {
         {result?<><div className="results-toolbar"><span><i className={'dot '+(sample?'lavender':'good')}/>{sample?'Example response · not a real assessment':'Analysis complete'}</span><button className="button secondary small" onClick={()=>downloadJson(sample?{demo:true,result}:result,sample?'demo-road-analysis':'road-analysis')}><Icon name="download" size={15}/>Download JSON</button></div><AnalysisResults result={result} demo={sample}/></>:<Note>Surface analysis reports aggregate candidates and visible texture. Verified pothole classes, metal content, image-derived slope, and material properties require additional models or measurements.</Note>}
       </div>
     </div>
+    <DetectionWorkspace image={analysis.selected?.file} scale={analysis.scale} pitch={analysis.pitch}/>
   </div>;
 }

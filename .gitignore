@@ -6,3 +6,12 @@ models/*.joblib
 data/images/*
 !data/images/.gitkeep
 .DS_Store
+.venv-roadhealth/
+node_modules/
+dist/
+playwright-report/
+test-results/
+models/*.pt
+models/*.onnx
+.local-road-health/
+runs/

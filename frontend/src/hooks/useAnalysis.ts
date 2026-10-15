@@ -53,7 +53,6 @@ export function useAnalysis() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length || !selected) return;
     const version = ++revision.current;
-    controller.current?.abort();
     const requestController = new AbortController();
     controller.current = requestController;
     setBusy(true); setResult(null); setNotice('');

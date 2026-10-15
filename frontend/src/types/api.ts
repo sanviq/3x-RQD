@@ -17,6 +17,7 @@ export interface AnalysisResponse {
     mean_chip_gap_mm_proxy: number | null;
   };
   chip_candidate_count: number;
+  large_gap_fraction_proxy?: number | null;
   warnings: string[];
   image: { original_width: number; original_height: number; processed_width: number; processed_height: number };
   assessment: {

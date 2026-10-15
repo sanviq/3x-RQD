@@ -1,3 +1,19 @@
+# Road Health — local application
+
+The active dashboard is the team's React/TypeScript application in `frontend/`. FastAPI provides granular analysis, an optional road-defect detector, tracking, assessment, repair planning, local GPS survey records, a mesh API, simulation and evaluation.
+
+Start locally from this folder:
+
+```sh
+./scripts/start-local.sh
+```
+
+Open http://127.0.0.1:8000 (API docs: http://127.0.0.1:8000/docs). Demo mode works without a training dataset. For real detections, install optional dependencies and configure trusted road-specific weights. The startup script does not push code or publish the application.
+
+See [local integration, API, model setup and limitations](docs/IMPLEMENTATION.md). The original surface-analysis endpoint and its calibration contract are preserved below.
+
+---
+
 # Road Quality Measurement — backend starter
 
 Python/FastAPI backend for close-up road-surface analysis. Upload a road crop to
@@ -38,8 +54,8 @@ edge chips are excluded, causing some density undercount. Maximum upload is
 Optional `pitch_degrees` records a user-supplied calibrated sensor measurement;
 the API does not infer slope from a single photo. Pitch is not used in scoring.
 `include_overlay=true` returns a base64 PNG: green candidate boundaries, red
-potential dark linear distress. There is no separate frontend; Swagger `/docs`
-is the basic testing UI. No uploaded images are stored.
+potential dark linear distress. The team frontend provides the application UI; Swagger `/docs`
+remains available for API testing. No uploaded images are stored.
 
 ## Features and method
 

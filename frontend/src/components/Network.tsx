@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { LiveNetwork } from './LiveNetwork';
 import type { Page, Weights } from '../types/api';
 import { segments, score, band, conditionClass, factorNames } from '../data/demo';
 import { number, percent } from '../utils/formatters';
 import { NetworkMap } from './NetworkMap';
 import { SurfaceArt } from './SurfaceArt';
 import { Icon } from './Icon';
-import { Badge, EmptyState, Note, PanelTitle } from './UI';
+import { Badge, Note, PanelTitle } from './UI';
 export function Network({demo,weights,selected,onSelect,onNavigate}:{demo:boolean;weights:Weights;selected:string;onSelect:(id:string)=>void;onNavigate:(page:Page)=>void}) {
   const [filter,setFilter]=useState('All');
   const [view,setView]=useState('detections');
@@ -19,7 +20,7 @@ export function Network({demo,weights,selected,onSelect,onNavigate}:{demo:boolea
   const value=score(segment,weights);
   const confidence=shownDefects.length?shownDefects.reduce((sum,x)=>sum+x.confidence,0)/shownDefects.length:null;
   const totalWeight=weights.reduce((sum,x)=>sum+x,0)||1;
-  if(!demo)return <section className="panel"><EmptyState title="Connect your road network" description="GPS-linked segment records are not part of the current surface-analysis API. Explore the sample network in demo mode, or analyze individual captures." action={<button className="button primary" onClick={()=>onNavigate('inspection')}>Inspect a surface<Icon name="arrow" size={16}/></button>} icon="map"/></section>;
+  if(!demo)return <LiveNetwork onNavigate={onNavigate}/>;
   const profileValues=segments.map(x=>profile==='Quality'?score(x,weights):profile==='Defect density'?x.defects.length/x.length:x.pitch);
   const maximum=Math.max(...profileValues,1),minimum=Math.min(...profileValues,0);
   const points=profileValues.map((v,i)=>(50+segments[i].distance/12.6*600)+','+(160-(v-minimum)/(maximum-minimum)*125)).join(' ');
