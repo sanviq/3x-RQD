@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { segments, score, band, summary, optimize, defaultWeights } from '../src/data/demo.ts';
+import { optionalNumber, validateDimensions, validateFile, MAX_BYTES } from '../src/utils/imageValidation.ts';
+import { number } from '../src/utils/formatters.ts';
+let checks=0;
+const check=(name,fn)=>{fn();checks++;console.log('PASS '+name)};
+check('documented score formula',()=>assert.equal(score(segments[0]),31));
+check('API-independent demo classification boundaries',()=>{assert.equal(band(75),'Good');assert.equal(band(74),'Moderate');assert.equal(band(50),'Moderate');assert.equal(band(49),'Bad')});
+check('distance-weighted network aggregate',()=>{const total=segments.reduce((s,x)=>s+x.length,0);assert.equal(summary().average,Math.round(segments.reduce((s,x)=>s+score(x)*x.length,0)/total))});
+check('greedy planning respects budget',()=>{for(const budget of [0,85000,300000,800000,1500000]){const ids=optimize(budget,defaultWeights);assert.ok(segments.filter(x=>ids.includes(x.id)).reduce((s,x)=>s+x.cost,0)<=budget)}});
+check('repair does not reduce quality',()=>{for(const s of segments)assert.ok(score(s,defaultWeights,true)>=score(s))});
+check('empty optional values are omitted; zero sensor pitch is valid',()=>{assert.deepEqual(optionalNumber('','scale'),{});assert.deepEqual(optionalNumber('0','pitch'),{value:0})});
+check('scale and pitch bounds reject invalid values',()=>{for(const x of ['0','-1','1000.01','Infinity'])assert.ok(optionalNumber(x,'scale').error);for(const x of ['-90.01','90.01','NaN'])assert.ok(optionalNumber(x,'pitch').error)});
+check('20 MP and minimum dimensions are enforced',()=>{assert.equal(validateDimensions(5000,4000),null);assert.equal(validateDimensions(64,64),null);assert.ok(validateDimensions(5001,4000));assert.ok(validateDimensions(63,64))});
+check('file type, emptiness, and exact 12 MiB boundary',()=>{assert.equal(validateFile(new File([new Uint8Array(MAX_BYTES)],'road.png',{type:'image/png'})),null);assert.ok(validateFile(new File([new Uint8Array(MAX_BYTES+1)],'road.png',{type:'image/png'})));assert.ok(validateFile(new File([],'empty.png',{type:'image/png'})));assert.ok(validateFile(new File(['x'],'image.svg',{type:'image/svg+xml'})))});
+check('null and zero remain distinct',()=>{assert.equal(number(null),'Not available');assert.equal(number(0),'0.00')});
+console.log(checks+' core checks passed. These do not replace TypeScript, browser, or real-backend verification.');

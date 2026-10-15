@@ -1,0 +1,38 @@
+import type { CSSProperties } from 'react';
+const paths: Record<string, React.ReactNode> = {
+  road:<><path d="m5 21 5-18m4 0 5 18M12 4v3m0 4v3m0 4v3"/></>,
+  grid:<><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></>,
+  scan:<><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M7 12h10"/><circle cx="12" cy="12" r="3"/></>,
+  map:<><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zm6-3v15m6-12v15"/></>,
+  tool:<><path d="m14 6 4-4a6 6 0 0 1-7 8L4 18a2 2 0 0 0 3 3l8-8a6 6 0 0 0 7-7l-4 4z"/></>,
+  sliders:<><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3" fill="currentColor"/><circle cx="16" cy="17" r="3" fill="currentColor"/></>,
+  flask:<><path d="M9 3h6m-5 0v6l-6 10a1.5 1.5 0 0 0 1.3 2h13.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"/></>,
+  chart:<><path d="M4 3v17h17M8 15v-4m5 4V7m5 8V4"/></>,
+  layers:<><path d="m12 3 10 5-10 5L2 8zm-10 9 10 5 10-5M2 16l10 5 10-5"/></>,
+  arrow:<><path d="M5 12h14m-5-5 5 5-5 5"/></>,
+  diagonal:<><path d="M6 18 18 6M6 6h12v12"/></>,
+  chevron:<path d="m8 5 7 7-7 7"/>,
+  down:<path d="m6 9 6 6 6-6"/>,
+  plus:<path d="M12 5v14M5 12h14"/>,
+  search:<><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></>,
+  bell:<><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-11 12h4"/></>,
+  upload:<><path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></>,
+  download:<><path d="M12 3v13m-5-5 5 5 5-5M4 15v5h16v-5"/></>,
+  image:<><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></>,
+  video:<><rect x="3" y="5" width="12" height="14" rx="3"/><path d="m15 10 6-4v12l-6-4"/></>,
+  camera:<><path d="M8 5 9 3h6l1 2h4a2 2 0 0 1 2 2v12H2V7a2 2 0 0 1 2-2z"/><circle cx="12" cy="12" r="4"/></>,
+  check:<path d="m5 12 4 4L19 6"/>,
+  close:<path d="m6 6 12 12M6 18 18 6"/>,
+  refresh:<><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 4M4 15l2 4a7 7 0 0 0 12-2"/></>,
+  info:<><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/></>,
+  pin:<><path d="M19 10c0 6-7 11-7 11S5 16 5 10a7 7 0 0 1 14 0"/><circle cx="12" cy="10" r="2"/></>,
+  warning:<><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></>,
+  clock:<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></>,
+  menu:<path d="M4 6h16M4 12h16M4 18h16"/>,
+  cube:<><path d="m12 2 9 5v10l-9 5-9-5V7zm-9 5 9 5 9-5m-9 5v10M7 5l10 5"/></>,
+  sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/></>,
+  car:<><path d="m5 9 2-5h10l2 5M3 10h18v8H3zm2 8v3m14-3v3M6 13h2m8 0h2"/></>,
+};
+export function Icon({name,size=20,className='',style}:{name:string;size?:number;className?:string;style?:CSSProperties}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className} style={style} aria-hidden="true">{paths[name] ?? paths.info}</svg>;
+}
