@@ -121,7 +121,7 @@ def test_release_upload_preserves_a_different_existing_asset(tmp_path,monkeypatc
     from tools.prepare_rdd2022 import file_sha256
     file=tmp_path/'small.json';file.write_text('{"fixture":true}')
     inventory={'assets':[{'name':file.name,'size':file.stat().st_size,'digest':'sha256:'+file_sha256(file)}]}
-    monkeypatch.setattr(github_assets.subprocess,'check_output',lambda *a,**kw:json.dumps(inventory))
+    monkeypatch.setattr(github_assets.subprocess,'check_output',lambda *a,**kw:json.dumps([{**inventory,'tag_name':'fixture','draft':True}]))
     calls=[];monkeypatch.setattr(github_assets.subprocess,'run',lambda *a,**kw:calls.append(a))
     github_assets.upload_assets('fixture',[file]);assert not calls
     inventory['assets'][0]['digest']='sha256:'+'0'*64
