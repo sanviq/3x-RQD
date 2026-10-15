@@ -2,6 +2,7 @@
 import { request, ApiError, isRecord, finiteNumber } from './client';
 export interface Defect {
   id:string; class_name:string; confidence:number; bbox:[number,number,number,number]; polygon:[number,number][];
+  detection_code?:'D00'|'D10'|'D20'|'D40'|null; detection_label?:string|null;
   severity:number; track_id:number|null; depth_mm:number|null; depth_source:'depth_sensor'|'validated_reconstruction'|null;
   area_fraction?:number; area_m2?:number|null; width_mm?:number|null; height_mm?:number|null; area_method?:string;
 }
@@ -63,6 +64,7 @@ export async function startTracking(){return await request('/streams',{method:'P
 export async function stopTracking(id:string){return request('/streams/'+encodeURIComponent(id),{method:'DELETE'})}
 export function baselineFor(result:DetectionResult,scale='',pitch='',roll='',inclination?:Record<string,unknown>):AssessmentInput {
   const defects=result.assessment.defects.map(d=>({id:d.id,class_name:d.class_name,confidence:d.confidence,bbox:d.bbox,polygon:d.polygon,
+    detection_code:d.detection_code??null,detection_label:d.detection_label??null,
     severity:d.severity,track_id:d.track_id,depth_mm:d.depth_mm,depth_source:d.depth_source}));
   return {defects,width:result.width,height:result.height,mm_per_pixel:scale.trim()?Number(scale):null,
     inclination:inclination??(pitch.trim()?{source:'imu',pitch:Number(pitch),roll:roll.trim()?Number(roll):null}:{source:'unavailable'}),config:result.assessment.configuration,repaired:[]};

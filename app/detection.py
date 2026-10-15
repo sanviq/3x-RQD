@@ -17,6 +17,10 @@ ALIASES = {'potholes': 'pothole', 'longitudinal_crack': 'crack', 'transverse_cra
            'alligator_crack': 'crack', 'patch': 'repair_patch', 'raveling': 'ravelling',
            'd00': 'crack', 'd10': 'crack', 'd20': 'crack', 'd40': 'pothole',
            'loose_stones': 'loose_chips', 'loose_rock_chips': 'loose_chips', 'metal': 'metallic_debris'}
+RDD_LABELS = {'D00': 'Longitudinal crack', 'D10': 'Transverse crack',
+              'D20': 'Alligator crack', 'D40': 'Pothole'}
+RDD_CODES = {**{c.lower(): c for c in RDD_LABELS}, 'longitudinal_crack': 'D00',
+             'transverse_crack': 'D10', 'alligator_crack': 'D20', 'pothole': 'D40'}
 
 
 def model_status():
@@ -127,6 +131,7 @@ def predict(image, mode='demo', confidence=.35, resolution=640, seed=1):
         unknown=set()
         for i, box in enumerate(prediction.boxes):
             raw = str(prediction.names[int(box.cls.item())]).lower().replace(' ','_').replace('-','_')
+            code = RDD_CODES.get(raw)
             name = ALIASES.get(raw,raw)
             if name not in CLASSES:
                 unknown.add(raw)
@@ -143,6 +148,7 @@ def predict(image, mode='demo', confidence=.35, resolution=640, seed=1):
             severity=float(np.clip(.3+area*4+(0.2 if name=='pothole' else 0),.15,1))
             if name=='repair_patch': severity=.2
             defects.append(Defect(id=f'defect-{i+1}',class_name=name,confidence=float(box.conf.item()),
+                                  detection_code=code, detection_label=RDD_LABELS.get(code, raw),
                                   bbox=tuple(coords),polygon=polygon,severity=severity))
         if unknown:
             raise ValueError('Unsupported model classes: '+', '.join(sorted(unknown))+'. Configure road-specific weights or extend ALIASES in app/detection.py.')
@@ -197,7 +203,7 @@ def visuals(image, defects):
         severity[mask]=np.maximum(severity[mask],d.severity)
         x1,y1,x2,y2=[int(v*s) for v,s in zip(d.bbox,[w,h,w,h])]
         cv2.rectangle(boxes,(x1,y1),(x2,y2),color,2)
-        cv2.putText(boxes,f'{d.class_name} {d.confidence:.0%}',(x1,max(15,y1-7)),cv2.FONT_HERSHEY_SIMPLEX,.5,color,1,cv2.LINE_AA)
+        cv2.putText(boxes,f'{d.detection_code or d.class_name} {d.confidence:.0%}',(x1,max(15,y1-7)),cv2.FONT_HERSHEY_SIMPLEX,.5,color,1,cv2.LINE_AA)
     heat=np.zeros_like(image)
     heat[:]=(85,160,45)
     heat[(severity>=.4)&(severity<.7)]=(20,210,245)
@@ -227,10 +233,16 @@ def inspect(image, mode='demo', confidence=.35, resolution=640, mm_per_pixel=Non
     if tracker: defects=tracker.update(defects)
     assessment=assess(defects,original_w,original_h,mm_per_pixel,inclination,config)
     quality=image_quality(image)
-    if quality['repeat_capture']:
+    insufficient = mode == 'model' and (not defects or assessment['average_confidence'] < .6)
+    assessment['evidence_status'] = 'insufficient' if insufficient else 'demo' if mode == 'demo' else 'detections_available'
+    if quality['repeat_capture'] or insufficient:
         assessment['candidate_score'] = assessment['score']
         assessment['score'] = None
         assessment['band'] = 'Unassessable'
+        if insufficient:
+            assessment['explanation'] = 'Insufficient detection evidence: no detections or low mean detection confidence. This does not establish a healthy road. Repeat capture and review model coverage. ' + assessment['explanation']
+    if mode == 'model':
+        assessment['limitations'].append('RDD2022 covers four damage types only. Undetected ravelling, roughness, patches and material condition are not established as absent. Confidence measures detection certainty, not road quality.')
     images=visuals(image,defects)
     elapsed=(time.perf_counter()-started)*1000
     return {'provenance':'demo' if mode=='demo' else 'model',

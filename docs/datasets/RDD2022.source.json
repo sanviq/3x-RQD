@@ -1,0 +1,20 @@
+{
+  "dataset": "RDD2022 released through CRDDC2022",
+  "article": "https://figshare.com/articles/dataset/21431547",
+  "doi": "10.6084/m9.figshare.21431547.v1",
+  "authors_repository": "https://github.com/sekilab/RoadDamageDetector",
+  "license": "CC BY 4.0",
+  "archive": {
+    "name": "RDD2022_released_through_CRDDC2022.zip",
+    "file_id": 38030910,
+    "download_url": "https://ndownloader.figshare.com/files/38030910",
+    "bytes": 13264172619,
+    "publisher_md5": "b62bd51d2ffcfaa76c60f234f0cc2bb3"
+  },
+  "class_ids": {"0": "D00", "1": "D10", "2": "D20", "3": "D40"},
+  "class_labels": {"D00": "Longitudinal crack", "D10": "Transverse crack", "D20": "Alligator crack", "D40": "Pothole"},
+  "published_totals_not_local_audit": {"images": 47420, "damage_instances": ">55000"},
+  "subsets": ["China_Drone", "China_MotorBike", "Czech", "India", "Japan", "Norway", "United_States"],
+  "official_test": "Unlabelled: never use for accuracy or silently as negatives",
+  "citation": "Arya, D., Maeda, H., Ghosh, S. K., Toshniwal, D., & Sekimoto, Y. (2024). RDD2022: A multi-national image dataset for automatic road damage detection. Geoscience Data Journal, 11(4), 846–862."
+}

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
-from app.assessment import Segment, assess
+from app.assessment import Segment, assess, withhold_insufficient_model_score
 from app.simulation import assessment_args
 
 class SavedSegment(Segment):
@@ -53,10 +53,16 @@ def list_segments():
     segments = []
     for payload, updated in rows:
         record = SavedSegment.model_validate_json(payload)
-        segments.append({**record.model_dump(),'updated_at':updated,'result':assess(**assessment_args(record.assessment))})
+        result = assess(**assessment_args(record.assessment))
+        if record.provenance == 'model':
+            result = withhold_insufficient_model_score(result)
+        segments.append({**record.model_dump(),'updated_at':updated,'result':result})
     length = sum(s['length_m'] for s in segments)
+    assessed = [s for s in segments if s['result']['score'] is not None]
+    assessed_length = sum(s['length_m'] for s in assessed)
     return {'segments':segments,'summary':{'distance_m':length,'segment_count':len(segments),
-            'average_quality':round(sum(s['result']['score']*s['length_m'] for s in segments)/length,2) if length else None,
+            'average_quality':round(sum(s['result']['score']*s['length_m'] for s in assessed)/assessed_length,2) if assessed_length else None,
+            'assessed_distance_m':assessed_length,'unassessable_segments':len(segments)-len(assessed),
             'defects':sum(s['result']['defect_count'] for s in segments),'bad_segments':sum(s['result']['band']=='Bad' for s in segments),
             'low_confidence_segments':[s['id'] for s in segments if s['provenance']!='demo' and (s['result']['average_confidence'] is None or s['result']['average_confidence']<.6)]},
-            'notice':'Locally saved, user-supplied records. Segment lengths, GPS and sensor calibration are not independently verified. Distances sum declared segment lengths; overlapping segments are not merged. Scores use each saved policy.'}
+            'notice':'Locally saved, user-supplied records. Segment lengths, GPS and sensor calibration are not independently verified. Distances sum declared segment lengths; overlapping segments are not merged. Scores use each saved policy. Average quality excludes unassessable segments; missing scores do not mean healthy roads.'}

@@ -20,6 +20,8 @@ class Defect(SafeModel):
     id: str = Field(max_length=80)
     class_name: Literal['pothole', 'crack', 'repair_patch', 'ravelling', 'loose_chips', 'metallic_debris', 'uneven_surface', 'other']
     confidence: float = Field(ge=0, le=1)
+    detection_code: Literal['D00', 'D10', 'D20', 'D40'] | None = None
+    detection_label: str | None = Field(default=None, max_length=80)
     bbox: tuple[float, float, float, float]
     polygon: list[tuple[float, float]] = Field(default_factory=list, max_length=4096)
     severity: float = Field(default=.6, ge=0, le=1)
@@ -29,6 +31,8 @@ class Defect(SafeModel):
 
     @model_validator(mode='after')
     def valid_geometry(self):
+        if self.detection_code and self.class_name != ('pothole' if self.detection_code == 'D40' else 'crack'):
+            raise ValueError('RDD damage code does not match the compatible road-health class.')
         x1, y1, x2, y2 = self.bbox
         if not (0 <= x1 < x2 <= 1 and 0 <= y1 < y2 <= 1):
             raise ValueError('Boxes use normalized x1,y1,x2,y2 coordinates in [0,1].')
@@ -207,14 +211,29 @@ class OptimizeRequest(SafeModel):
     minimum_treatment_fraction: float = Field(default=.01, gt=0, le=1)
 
 
+def withhold_insufficient_model_score(result):
+    """Apply an evidence gate to model observations, never to repair scenarios."""
+    if result['defect_count'] == 0 or (result['average_confidence'] or 0) < .6:
+        result['candidate_score'] = result['score']
+        result['score'] = None
+        result['band'] = 'Unassessable'
+        result['evidence_status'] = 'insufficient'
+        result['explanation'] = 'Insufficient model evidence; repeat capture and review. No detected damage does not establish a healthy road. ' + result['explanation']
+    return result
+
+
 def optimize(req: OptimizeRequest):
     items = []
+    excluded = []
     for s in req.segments:
         args = s.assessment.model_dump()
         args['defects'] = s.assessment.defects
         args['inclination'] = s.assessment.inclination
         args['config'] = s.assessment.config
         before = assess(**args)
+        if s.provenance == 'model' and withhold_insufficient_model_score(before)['score'] is None:
+            excluded.append({'id': s.id, 'reason': 'Insufficient model evidence; repeat capture before estimating repair benefit.'})
+            continue
         args['repaired'] = [d.id for d in s.assessment.defects]
         after = assess(**args)
         # Image coverage is used as an explicit, unvalidated extrapolation to full segment area.
@@ -228,6 +247,6 @@ def optimize(req: OptimizeRequest):
         if item['gain'] > 0 and item['cost'] <= remaining:
             item['selected'] = True
             remaining -= item['cost']
-    return {'recommendations': items, 'spent': req.budget-remaining, 'remaining': remaining,
+    return {'recommendations': items, 'excluded_segments': excluded, 'spent': req.budget-remaining, 'remaining': remaining,
             'method': 'greedy score-gain × segment-length / cost', 'validated': False,
             'assumptions': 'Illustrative INR costs. Image coverage extrapolated to segment area. Full selected treatment removes annotated defects; durability, traffic management, hidden damage and structural work excluded. Not a procurement estimate.'}

@@ -15,3 +15,13 @@ models/*.pt
 models/*.onnx
 .local-road-health/
 runs/
+
+# Training data and checkpoints belong outside source control, at any path.
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.zip
+*.download.json
+/datasets/
+data/rdd2022/
