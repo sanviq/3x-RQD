@@ -2,6 +2,8 @@ For full backend/frontend launch and the uploaded-road simulations, see [../RUNN
 
 # Road Health frontend
 
+> Local backend integration is now available. The existing interface and demo workflows are preserved; additive detection, saved-survey, planning, mesh and raw-evaluation tools are documented in [the integration guide](../docs/IMPLEMENTATION.md). The original implementation notes below describe the initial frontend.
+
 A responsive React + TypeScript workspace for road-surface inspection, with plain CSS and Vite. The design takes its cream surfaces, restrained lavender navigation, brown feature cards, and rounded frame from the supplied reference.
 
 ## Start

@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { LivePlanner } from './LiveNetwork';
 import type { Weights } from '../types/api';
 import { segments, optimize, score, summary, band, conditionClass } from '../data/demo';
-import { Badge, Note, PanelTitle, EmptyState } from './UI';
+import { Badge, Note, PanelTitle } from './UI';
 import { Icon } from './Icon';
 import { NetworkMap } from './NetworkMap';
 import { money, downloadJson } from '../utils/formatters';
@@ -13,7 +14,7 @@ export function Planner({demo,weights}:{demo:boolean;weights:Weights}) {
   const before=summary(weights);
   const after=summary(weights,selected);
   const ranking=[...segments].sort((a,b)=>((score(b,weights,true)-score(b,weights))*b.length/b.cost)-((score(a,weights,true)-score(a,weights))*a.length/a.cost));
-  if(!demo)return <section className="panel"><EmptyState icon="tool" title="Repair planning needs segment data" description="Switch to the demo workspace to explore the budget optimizer. Real planning requires inspected segments, calibrated repair costs, and local maintenance standards."/></section>;
+  if(!demo)return <LivePlanner weights={weights}/>;
   return <div className="page-enter">
     <div className="page-heading"><div><p className="eyebrow">MAINTENANCE · DEMONSTRATION</p><h1>Repair planning<span className="heading-dot">.</span></h1><p>Compare budgets and select priority segments.</p></div><button className="button secondary" onClick={()=>downloadJson({demo:true,assumptions:'Illustrative costs; 75% reduction in visible-condition penalties after repair. Not a validated engineering estimate.',budget,selected,spent,before,after,weights},'demo-repair-plan')}><Icon name="download" size={16}/>Export scenario</button></div>
     <Note tone="warning">Planning sandbox. Costs and repair outcomes are assumptions, not quotations or validated forecasts. The optimizer ranks quality gain × segment length per rupee and selects affordable segments greedily.</Note>

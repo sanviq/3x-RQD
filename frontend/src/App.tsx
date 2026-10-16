@@ -40,6 +40,7 @@ export default function App(){
   const analysis=useAnalysis();
   const roadNetwork=useRoadNetwork();
   const [sampleNetwork,setSampleNetwork]=useState(false);
+  const [savedNetwork,setSavedNetwork]=useState(false);
   const navigate=(next:Page)=>{setPage(next);if(next==='lab')setLabOpened(true);if(next==='inspection')setDemo(false);setDrawer(false);setNotifications(false);window.scrollTo({top:0,behavior:'instant'})};
   const selectSegment=(id:string)=>{setSampleNetwork(true);setDemo(true);setSelected(id);navigate('network')};
   const healthLabel=health.loading?'Connecting…':health.health?health.health.model_loaded?'Trained model connected':'Texture analysis connected':'Backend offline';
@@ -68,7 +69,7 @@ export default function App(){
         <main id="main-content">
           {page==='overview'&&<Overview demo={demo} weights={weights} onNavigate={navigate} onSegment={selectSegment} analysis={analysis}/>}
           {page==='inspection'&&<Inspection analysis={analysis} onSimulate={()=>navigate('lab')}/>}
-          {page==='network'&&<><div className="segmented preview-tabs"><button className={!sampleNetwork?'active':''} onClick={()=>setSampleNetwork(false)}>Your connected network</button><button className={sampleNetwork?'active':''} onClick={()=>setSampleNetwork(true)}>Sample network</button></div>{sampleNetwork?<Network demo weights={weights} selected={selected} onSelect={setSelected} onNavigate={navigate}/>:<ConnectedNetwork network={roadNetwork} analysis={analysis} onInspect={()=>navigate('inspection')} onTwin={()=>navigate('lab')}/>}</>}
+          {page==='network'&&<><div className="segmented preview-tabs"><button className={!sampleNetwork&&!savedNetwork?'active':''} onClick={()=>{setSampleNetwork(false);setSavedNetwork(false)}}>Your connected network</button><button className={sampleNetwork?'active':''} onClick={()=>{setSampleNetwork(true);setSavedNetwork(false)}}>Sample network</button><button className={savedNetwork&&!sampleNetwork?'active':''} onClick={()=>{setSampleNetwork(false);setSavedNetwork(true);setDemo(false)}}>Saved GPS surveys</button></div>{sampleNetwork?<Network demo weights={weights} selected={selected} onSelect={setSelected} onNavigate={navigate}/>:savedNetwork?<Network demo={false} weights={weights} selected={selected} onSelect={setSelected} onNavigate={navigate}/>:<ConnectedNetwork network={roadNetwork} analysis={analysis} onInspect={()=>navigate('inspection')} onTwin={()=>navigate('lab')}/>}</>}
           {page==='planner'&&<Planner demo={demo} weights={weights}/>}
           {labOpened&&<div hidden={page!=='lab'}><ScenarioLab active={page==='lab'} demo={demo} selected={selected} onNavigate={navigate} analysis={analysis}/></div>}
           {page==='evaluation'&&<Evaluation/>}

@@ -1,0 +1,13 @@
+{
+  "checks": {
+    "minimum_precision_at_035": 0.5,
+    "minimum_recall_at_035": 0.3,
+    "minimum_map50": 0.3,
+    "minimum_class_ap50": 0.1
+  },
+  "validation_passed": false,
+  "test_passed": false,
+  "enabled_for_local_model_mode": false,
+  "checkpoint_sha256": "924b44828eb8fda4bc87614a7107c450a3f5a9d679d8f48373f5d52ddf1db11d",
+  "notice": "Prototype reliability gate only; road-health scores and severity remain unvalidated."
+}

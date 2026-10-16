@@ -17,7 +17,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Road Quality Assessment", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Road Health", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -86,3 +86,16 @@ async def detect_uploaded_defects(
         return await run_in_threadpool(lambda: detect_defects(decode_image(data), quad))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+
+
+# Keep the teammates' /api client and Vite's prefix-stripping proxy compatible.
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from app.road_api import router
+app.include_router(router, prefix="/api")
+app.include_router(router, include_in_schema=False)
+app.add_api_route("/api/health", health, methods=["GET"])
+app.add_api_route("/api/analyze", analyze_road, methods=["POST"])
+_frontend = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+if _frontend.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="road-health")

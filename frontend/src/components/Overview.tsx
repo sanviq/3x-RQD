@@ -1,19 +1,19 @@
 import { useState } from 'react';
+import { LiveNetwork } from './LiveNetwork';
 import type { Page, Weights } from '../types/api';
 import type { AnalysisController } from '../hooks/useAnalysis';
 import { segments, summary, score, band, conditionClass } from '../data/demo';
 import { Icon } from './Icon';
 import { NetworkMap } from './NetworkMap';
-import { Badge, EmptyState, PanelTitle } from './UI';
+import { Badge, PanelTitle } from './UI';
 import { number } from '../utils/formatters';
-export function Overview({demo,weights,onNavigate,onSegment,analysis}:{demo:boolean;weights:Weights;onNavigate:(page:Page)=>void;onSegment:(id:string)=>void;analysis:AnalysisController}) {
+export function Overview({demo,weights,onNavigate,onSegment}:{demo:boolean;weights:Weights;onNavigate:(page:Page)=>void;onSegment:(id:string)=>void;analysis:AnalysisController}) {
   const [selected,setSelected]=useState(segments[0].id);
   const [filter,setFilter]=useState('All conditions');
   const stats=summary(weights);
   const selectedSegment=segments.find(x=>x.id===selected)!;
   const ongoing=segments.filter(x=>filter==='All conditions'||band(score(x,weights))===filter).slice(0,3);
-  if(!demo)return <div className="page-enter"><div className="page-heading"><div><p className="eyebrow">LIVE WORKSPACE</p><h1>Network overview</h1><p>Your surface analysis and network data.</p></div></div>
-    <section className="panel"><EmptyState title={analysis.result?'Your latest inspection is ready':'Start with a surface inspection'} description={analysis.result?'The connected API returns individual image assessments. Route totals require GPS-linked segment data.':'Upload a close-up road image to get an experimental assessment. Network summaries will appear when a route data service is connected.'} action={<button className="button primary" onClick={()=>onNavigate('inspection')}>{analysis.result?'View inspection':'New inspection'}<Icon name="arrow" size={16}/></button>}/></section></div>;
+  if(!demo)return <LiveNetwork onNavigate={onNavigate} compact/>;
   return <div className="page-enter">
     <div className="page-heading"><div><p className="eyebrow">YOUR INSPECTION WORKSPACE</p><h1>Roads at a glance<span className="heading-dot">.</span></h1><p>Condition, coverage, and maintenance priorities.</p></div><button className="button primary" onClick={()=>onNavigate('inspection')}><Icon name="plus" size={17}/>New inspection</button></div>
     <div className="workspace-note"><span><i className="dot lavender"/>Demo workspace</span><p>Six sample segments in East Bengaluru. All metrics below are illustrative.</p><button className="text-button" onClick={()=>onNavigate('network')}>Explore network<Icon name="arrow" size={15}/></button></div>

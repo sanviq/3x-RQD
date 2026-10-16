@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BackendEvaluationTool } from './BackendEvaluation';
 import { Badge, EmptyState, Note, PanelTitle } from './UI';
 import { Icon } from './Icon';
 import { downloadJson, number, percent } from '../utils/formatters';
@@ -34,7 +35,8 @@ export function Evaluation(){
     try{const data:unknown=JSON.parse(await file.text());if(!validateReport(data))throw new Error('Report format is invalid. Use the downloadable schema example.');setReport(data);setDemo(false)}catch(e){setError((e as Error).message)}
   };
   return <div className="page-enter"><div className="page-heading"><div><p className="eyebrow">MODEL EVALUATION</p><h1>Model evaluation<span className="heading-dot">.</span></h1><p>Inspect evaluation data from a held-out, labeled dataset.</p></div><label className="button primary file-button"><Icon name="upload" size={16}/>Import evaluation JSON<input type="file" accept=".json,application/json" onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void importFile(f)}}/></label></div>
-    <Note>The current backend has no evaluation endpoint. Import an independently generated evaluation report. A loaded model and an experimental surface score do not establish validated accuracy.</Note>
+    <Note>Import an independently generated report, or calculate detection metrics from raw ground truth and predictions below. A loaded model and an experimental score do not establish validated accuracy.</Note>
+    <BackendEvaluationTool onCalculated={value=>{setReport(value);setDemo(false)}}/>
     {error&&<p className="field-error" role="alert">{error}</p>}
     {!report?<section className="panel"><EmptyState icon="chart" title="No evaluation dataset connected" description="Precision, recall, F1, mAP, a confusion matrix, and class distribution need real labeled test results. Import your report or explore an explicitly synthetic example." action={<div className="action-row"><button className="button secondary" onClick={()=>{setReport(sampleReport);setDemo(true)}}>View synthetic example</button><button className="text-button" onClick={()=>downloadJson({...sampleReport,schema_note:'Replace every value with your real evaluation results. Rows are actual classes; columns are predicted classes. map is a fraction; record your IoU definition in the dataset description.'},'evaluation-schema-example')}>Download format example<Icon name="download" size={15}/></button></div>}/></section>:<>
       <div className="workspace-note"><span><i className={'dot '+(demo?'lavender':'good')}/>{demo?'Synthetic evaluation example':'Imported report · user supplied'}</span><p>{report.dataset}</p><button className="text-button" onClick={()=>setReport(null)}>Clear report<Icon name="close" size={15}/></button></div>

@@ -24,7 +24,8 @@ export function AnalysisResults({result,demo=false}:{result:AnalysisResponse;dem
       <><Metric label="Detected chip candidates" value={integer(result.chip_candidate_count)}/>
       <Metric label="Visible chip coverage" value={percent(result.features.chip_coverage_fraction)}/>
       <Metric label="Spatial coverage uniformity" value={percent(result.features.packing_uniformity)}/>
-      <Metric label="Potential dark linear area" value={percent(result.features.dark_linear_fraction)}/></>
+      <Metric label="Potential dark linear area" value={percent(result.features.dark_linear_fraction)}/>
+      {result.large_gap_fraction_proxy!==undefined&&<Metric label="Large-gap fraction · visual proxy" value={result.large_gap_fraction_proxy===null?'Not available':percent(result.large_gap_fraction_proxy)}/>}</>
       {isScene&&<><Metric label="Mean image brightness" value={percent(result.features.brightness_mean)}/><Metric label="Image detail proxy" value={number(result.features.laplacian_variance)}/><Metric label="Dark image area" value={percent(result.features.dark_region_fraction)}/></>}
     </div><p className="fine-print">These are API-computed candidates inside the selected road polygon, not verified individual stones. Perspective scenes cannot resolve aggregate uniformly: candidates may include patches, reflections or larger regions, rather than individual stones. Use a sharp close-up for chip sizing. Dark regions may include shadows and joints.</p></section>
     <section className="assessment-card">

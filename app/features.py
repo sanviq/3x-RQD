@@ -167,5 +167,6 @@ def extract_features(image: np.ndarray, mm_per_pixel: float | None = None, road_
             "chip_candidate_count": len(regions), "warnings": notes,
             "analysis_region": {"road_quad": [{"x": float(p["x"] if isinstance(p, dict) else p[0]), "y": float(p["y"] if isinstance(p, dict) else p[1])} for p in road_quad] if road_quad is not None else None, "processed_pixel_count": sample_size,
                                 "image_fraction": float(valid.mean()), "scope": "selected_road" if road_quad is not None else "full_image"},
+            "large_gap_fraction_proxy": float(np.mean(gaps > diameters.mean())) if len(gaps) and len(diameters) else None,
             "image": {"original_width": original_w, "original_height": original_h,
                       "processed_width": width, "processed_height": height}}, overlay

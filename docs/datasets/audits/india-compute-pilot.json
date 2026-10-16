@@ -1,0 +1,18 @@
+{
+  "notice": "Resource pilot only. Its weights/metrics are not a trained final detector or evidence of accuracy. Linear extrapolation excludes full validation, thermal throttling and checkpoint overhead.",
+  "dataset_manifest_sha256": "bd43420108033d5c2b578ac70b33a3f43965ed1d6be0f1d42ef9be6aa7961a1c",
+  "base_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+  "device": "mps",
+  "torch": "2.14.1",
+  "imgsz": 640,
+  "batch": 2,
+  "train_epoch_seconds": [
+    14.45987324998714,
+    5.749174666998442
+  ],
+  "benchmark_wall_seconds": 33.03202954196604,
+  "full_train_images": 5330,
+  "estimated_training_only_hours_50_epochs": 4.433319006814481,
+  "estimated_training_only_hours_100_epochs": 8.866638013628963,
+  "scope": "India-only resource pilot; not detector validation or production weights"
+}

@@ -1,0 +1,145 @@
+{
+  "status": "complete",
+  "source_url": "https://ndownloader.figshare.com/files/38030910",
+  "source_file_id": 38030910,
+  "seed": 42,
+  "target_per_subset": 250,
+  "raw_byte_budget": 681574400,
+  "class_mapping": {
+    "D00": 0,
+    "D10": 1,
+    "D20": 2,
+    "D40": 3
+  },
+  "subsets": {
+    "China_Drone": {
+      "source_train_images": 2401,
+      "source_official_test_images": 0,
+      "candidate_pairs": 1819,
+      "excluded_xml_reasons": {
+        "Unsupported annotation class: Repair": 579,
+        "Unsupported annotation class: Block crack": 3
+      },
+      "selected_images": 250,
+      "selected_bytes": 18001849,
+      "boxes": {
+        "D00": 162,
+        "D10": 113,
+        "D20": 106,
+        "D40": 78
+      }
+    },
+    "China_MotorBike": {
+      "source_train_images": 1977,
+      "source_official_test_images": 500,
+      "candidate_pairs": 1754,
+      "excluded_xml_reasons": {
+        "Unsupported annotation class: Repair": 223
+      },
+      "selected_images": 250,
+      "selected_bytes": 19397002,
+      "boxes": {
+        "D00": 249,
+        "D10": 114,
+        "D20": 98,
+        "D40": 107
+      }
+    },
+    "Czech": {
+      "source_train_images": 2829,
+      "source_official_test_images": 709,
+      "candidate_pairs": 2827,
+      "excluded_xml_reasons": {
+        "Invalid or out-of-bounds VOC box": 2
+      },
+      "selected_images": 250,
+      "selected_bytes": 18178911,
+      "boxes": {
+        "D00": 122,
+        "D10": 119,
+        "D20": 107,
+        "D40": 115
+      }
+    },
+    "India": {
+      "source_train_images": 7706,
+      "source_official_test_images": 1959,
+      "candidate_pairs": 6648,
+      "excluded_xml_reasons": {
+        "Unsupported annotation class: D44": 856,
+        "Unsupported annotation class: D01": 105,
+        "Unsupported annotation class: D11": 15,
+        "Unsupported annotation class: D43": 54,
+        "Unsupported annotation class: D50": 25,
+        "Invalid or out-of-bounds VOC box": 2,
+        "Unsupported annotation class: D0w0": 1
+      },
+      "selected_images": 250,
+      "selected_bytes": 17178097,
+      "boxes": {
+        "D00": 151,
+        "D10": 63,
+        "D20": 120,
+        "D40": 235
+      }
+    },
+    "Japan": {
+      "source_train_images": 10506,
+      "source_official_test_images": 2627,
+      "candidate_pairs": 4914,
+      "excluded_xml_reasons": {
+        "Unsupported annotation class: D44": 3077,
+        "Unsupported annotation class: D43": 602,
+        "Unsupported annotation class: D50": 1899,
+        "Invalid or out-of-bounds VOC box": 14
+      },
+      "selected_images": 250,
+      "selected_bytes": 24068235,
+      "boxes": {
+        "D00": 136,
+        "D10": 144,
+        "D20": 132,
+        "D40": 132
+      }
+    },
+    "Norway": {
+      "source_train_images": 8161,
+      "source_official_test_images": 2040,
+      "candidate_pairs": 7899,
+      "excluded_xml_reasons": {
+        "Invalid or out-of-bounds VOC box": 262
+      },
+      "selected_images": 250,
+      "selected_bytes": 308651930,
+      "boxes": {
+        "D00": 754,
+        "D10": 180,
+        "D20": 149,
+        "D40": 161
+      }
+    },
+    "United_States": {
+      "source_train_images": 4805,
+      "source_official_test_images": 1200,
+      "candidate_pairs": 4580,
+      "excluded_xml_reasons": {
+        "Invalid or out-of-bounds VOC box": 225
+      },
+      "selected_images": 250,
+      "selected_bytes": 19321431,
+      "boxes": {
+        "D00": 281,
+        "D10": 156,
+        "D20": 118,
+        "D40": 124
+      }
+    }
+  },
+  "location_scope": "Six countries; China has drone/motorbike subsets. Indian state/route metadata not established.",
+  "integrity": "Exact HTTP ranges and inner member CRCs plus saved SHA256; full archive MD5 not claimed for a partial download.",
+  "selection": "Seeded class-coverage sampling of labelled training data, approximately 10% explicit empty annotations. Unsupported-class images excluded. Not representative prevalence.",
+  "training_started": false,
+  "selected_images": 1750,
+  "network_bytes_this_run": 472593995,
+  "local_bytes_reused_this_run": 162029363
+}

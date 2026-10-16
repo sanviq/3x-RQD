@@ -1,0 +1,117 @@
+{
+  "source_archive": "India.zip",
+  "seed": 42,
+  "class_mapping": {
+    "D00": 0,
+    "D10": 1,
+    "D20": 2,
+    "D40": 3
+  },
+  "coordinates": "VOC 1-based inclusive -> YOLO normalized center/width/height",
+  "countries": {
+    "India": {
+      "official_test_images": 1959,
+      "train_images_seen": 7706,
+      "valid_pairs": 6648,
+      "difficult_objects": 0,
+      "explicit_empty_annotations": 3921,
+      "D40": 2955,
+      "invalid_pairs": 1058,
+      "D00": 1418,
+      "D20": 1634,
+      "D10": 63
+    }
+  },
+  "source_annotation_classes": {
+    "India": {
+      "D40": 3187,
+      "D44": 1062,
+      "D00": 1555,
+      "D20": 2021,
+      "D01": 179,
+      "D11": 45,
+      "D10": 68,
+      "D50": 28,
+      "D43": 57,
+      "D0w0": 1
+    }
+  },
+  "official_unlabelled_test_images": 1959,
+  "difficult_policy": "Include difficult objects as annotated positives; no ignored regions are invented.",
+  "limitations": [
+    "Filename blocks are a conservative related-frame proxy, not verified route IDs.",
+    "Pixel SHA256 and dHash <=2 plus close color thumbnails group identifiable duplicates; unidentified related scenes can remain.",
+    "Splits are internal holdouts of labelled training data, not the official challenge test."
+  ],
+  "conflicting_duplicate_images": 0,
+  "groups": {
+    "count": 99,
+    "largest_images": 79,
+    "filename_block_size": 100,
+    "dhash_distance": 2,
+    "near_duplicate_thumbnail_mae_max": 3,
+    "near_duplicate_thumbnail_p99_max": 12
+  },
+  "splits": {
+    "train": {
+      "images": 5330,
+      "objects": {
+        "D00": 1138,
+        "D10": 51,
+        "D20": 1303,
+        "D40": 2370
+      },
+      "countries": {
+        "India": 5330
+      }
+    },
+    "val": {
+      "images": 630,
+      "objects": {
+        "D00": 127,
+        "D10": 7,
+        "D20": 157,
+        "D40": 307
+      },
+      "countries": {
+        "India": 630
+      }
+    },
+    "test": {
+      "images": 688,
+      "objects": {
+        "D00": 153,
+        "D10": 5,
+        "D20": 174,
+        "D40": 278
+      },
+      "countries": {
+        "India": 688
+      }
+    }
+  },
+  "country_counts_scope": "Valid-pair counts precede conflict quarantine; final split counts are authoritative.",
+  "official_test_audit": "Counted only; unlabelled test images were not decoded or evaluated.",
+  "missing_classes_by_split": {
+    "train": [],
+    "val": [],
+    "test": []
+  },
+  "prepared_images": 6648,
+  "source_sha256": "28eab0aa85638855e1907e63b175be2305a0accd018c54603037d3fb8cab963a",
+  "status": "complete",
+  "issue_first_failure_counts": {
+    "Unsupported annotation class: D44": 856,
+    "Unsupported annotation class: D01": 105,
+    "Unsupported annotation class: D11": 15,
+    "Unsupported annotation class: D43": 54,
+    "Unsupported annotation class: D50": 25,
+    "Invalid or out-of-bounds VOC box": 2,
+    "Unsupported annotation class: D0w0": 1
+  },
+  "orphan_xml_count": 0,
+  "scope": "India subset pilot only; not the full multinational audit",
+  "original_member_crc32": "f186f6f8",
+  "parent_archive_md5_status": "Full archive download still in progress; India member CRC and per-image/XML integrity verified",
+  "prepared_manifest_sha256": "bd43420108033d5c2b578ac70b33a3f43965ed1d6be0f1d42ef9be6aa7961a1c"
+}

@@ -1,10 +1,28 @@
-# Road Health — inspection and simulation workspace
+# Road Health — local application
+
+The active dashboard is the team's React/TypeScript application in `frontend/`. FastAPI provides granular analysis, an optional road-defect detector, tracking, assessment, repair planning, local GPS survey records, a mesh API, simulation and evaluation.
+
+Start locally from this folder:
+
+```sh
+./scripts/start-local.sh
+```
+
+Open http://127.0.0.1:8000 (API docs: http://127.0.0.1:8000/docs). Demo mode works without a training dataset. For real detections, install optional dependencies and configure trusted road-specific weights. The startup script does not push code or publish the application.
+
+See [local integration, API, model setup and limitations](docs/IMPLEMENTATION.md). The original surface-analysis endpoint and its calibration contract are preserved below.
+
+For detector development, see [RDD2022 provenance, team download, preparation, training and evaluation](docs/datasets/README.md). The repository includes a tiny attributed real-data gallery; the compact training dataset and checkpoints are GitHub Release assets. See [the compact multinational workflow](docs/datasets/COMPACT.md). Downloading data does not replace demo mode with a trained detector.
+
+---
+
+# Road Quality Measurement — backend starter
 
 Python/FastAPI backend for close-up road-surface analysis. Upload a road crop to
 obtain aggregate-chip candidates, texture/boundary/spacing proxies, optional
 physical measurements, and diagnostic image descriptors. No road-health grade
 is issued without a validated condition model.
-This repository contains no training photos or pretrained model.
+The repository includes an attributed RDD2022 example gallery. Detector checkpoints and compact training data are distributed as release assets; they are not silently loaded by the granular surface-analysis endpoint.
 
 ## Full application
 
@@ -82,7 +100,7 @@ detail (brightness std <8/255 or Laplacian variance <25), extreme mean exposure
 (<25/255 or >235/255), and zero candidates withhold the diagnostic index.
 Scene captures also withhold physical aggregate measurements. Capture type is
 user-declared; this is not automatic road recognition. Feature schema is
-`surface-v2`; older weights must not be reused.
+`surface-v3`; older weights must not be reused.
 
 ## Train on your labeled images
 
@@ -136,3 +154,7 @@ Research informs the feature choices; it does not validate the starter score.
 ## Road defect candidates and wheel simulation
 
 POST /detect-defects returns OpenCV candidate polygons, original pixel bounding boxes, rectified-road coordinates, visual severity and uncalibrated evidence confidence. POST /analyze includes the same defect_detection object. Depth and physical dimensions remain null. The React upload workflow calls detection automatically and maps reviewed candidates into the wheel-level suspension simulation. No hardcoded sample defects are inserted for uploaded media. See DETECTION.md for documented approximations, test commands and limitations.
+
+## Integrated network and detector workflows
+
+The road-network page retains both imported GeoJSON connectivity and saved GPS survey records. Surface inspection retains the separate optional detector workspace, dataset gallery and local-save workflow, alongside automatic road-region texture analysis and wheel-level simulation. See [NETWORK_AND_ANALYSIS.md](NETWORK_AND_ANALYSIS.md).

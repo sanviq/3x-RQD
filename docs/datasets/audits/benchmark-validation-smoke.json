@@ -1,0 +1,83 @@
+{
+  "split": "val",
+  "checkpoint_sha256": "ada1d884aec3d529610756c0e1c11dd8f6f7cce5826b63862bc97724e1c28e3d",
+  "dataset_manifest_sha256": "bd43420108033d5c2b578ac70b33a3f43965ed1d6be0f1d42ef9be6aa7961a1c",
+  "images": 630,
+  "ultralytics_metrics": {
+    "metrics/precision(B)": 0.0015644192802333964,
+    "metrics/recall(B)": 0.12165708832133447,
+    "metrics/mAP50(B)": 0.000812467586523363,
+    "metrics/mAP50-95(B)": 0.0001729649700224311,
+    "fitness": 0.0001729649700224311
+  },
+  "per_class_metrics": {
+    "D00": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "map50": 0.0,
+      "map50_95": 0.0
+    },
+    "D10": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "map50": 0.0,
+      "map50_95": 0.0
+    },
+    "D20": {
+      "precision": 0.005784061696658098,
+      "recall": 0.22929936305732485,
+      "f1": 0.011283497884344141,
+      "map50": 0.0029404087652204064,
+      "map50_95": 0.0006209870520735964
+    },
+    "D40": {
+      "precision": 0.0004736154242754883,
+      "recall": 0.25732899022801303,
+      "f1": 0.000945490667767744,
+      "map50": 0.00030946158087304554,
+      "map50_95": 7.087282801612784e-05
+    }
+  },
+  "class_distribution": {
+    "D00": 127,
+    "D10": 7,
+    "D20": 157,
+    "D40": 307
+  },
+  "diagnostic": {
+    "confidence": 0.25,
+    "iou": 0.5,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 75,
+    "fn": 598,
+    "per_class_counts": {
+      "D00": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 127
+      },
+      "D10": {
+        "tp": 0,
+        "fp": 30,
+        "fn": 7
+      },
+      "D20": {
+        "tp": 0,
+        "fp": 4,
+        "fn": 157
+      },
+      "D40": {
+        "tp": 0,
+        "fp": 41,
+        "fn": 307
+      }
+    }
+  },
+  "notice": "Internal labelled holdout; not official challenge test accuracy. Ultralytics P/R use its operating-point convention; diagnostic P/R use the explicit threshold. No model improvement claim without a matched held-out baseline comparison.",
+  "scope": "Engineering smoke check of two-epoch resource-pilot weights only; not a production detector or a claimed model improvement. Held-out test untouched."
+}
