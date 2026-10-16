@@ -1,0 +1,7 @@
+{
+  "improvement_supported": true,
+  "baseline_imgsz": 640,
+  "candidate_imgsz": 768,
+  "same_fresh_test_manifest_sha256": "1293464c1a1c510fe42f798dfed2c40e3a44960499caa017ec990b9e6298fdaa",
+  "notice": "Matched fresh test comparison of complete inference pipelines. No previous v1 test metrics are compared across different datasets."
+}

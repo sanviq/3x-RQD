@@ -17,10 +17,17 @@ describe('live training and final results',()=>{
   complete=true;await act(async()=>{await vi.advanceTimersByTimeAsync(30000)});
   expect(screen.getByText('improvement-v2')).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('complete');
+  expect(screen.queryByLabelText('Interim training validation')).not.toBeInTheDocument();
  });
  it('warns when the heartbeat is stale',async()=>{
   vi.mocked(request).mockImplementation(async path=>path.includes('training-status')?{phase:'training',heartbeat_stale:true}:{run:'compact-v1',test:metrics,validation:metrics,activation:{},release_url:'#'});
   await act(async()=>{render(<MeasuredEvaluation/>)});
   expect(screen.getByText(/Training status has not updated recently/)).toBeInTheDocument();
+ });
+ it('does not describe a completed job as paused when its heartbeat ages',async()=>{
+  vi.mocked(request).mockImplementation(async path=>path.includes('training-status')?{phase:'complete',heartbeat_stale:true}:{run:'improvement-v2',test:metrics,validation:metrics,activation:{},release_url:'#'});
+  await act(async()=>{render(<MeasuredEvaluation/>)});
+  expect(screen.getByRole('status')).toHaveTextContent('complete');
+  expect(screen.queryByText(/Training status has not updated recently/)).not.toBeInTheDocument();
  });
 });

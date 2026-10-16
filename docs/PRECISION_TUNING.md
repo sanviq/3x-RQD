@@ -10,7 +10,7 @@ The agreed target is **90% detection precision** at class-correct IoU >= 0.50, w
 4. Choose the model and operating threshold on validation data. Track whether the 90% target is attainable and how many defects remain missed; the existing 30% recall floor is not a deployment-quality claim.
 5. Freeze the selected pipeline, then confirm performance against a matched baseline on an independent holdout. Once a holdout has informed further changes, it cannot provide a fresh final confirmation for those changes; reserve new independent groups for that confirmation.
 
-The running supervisor completes its existing approved evaluation and activation protocol. It does not automatically launch repeated refinement training. Its existing prototype activation gates are separate from the 90% project target; passing them must not be reported as reaching 90%.
+The completed v2 supervisor ran its approved evaluation and activation protocol. Its prototype activation gates are separate from the 90% project target; passing them must not be reported as reaching 90%. The follow-up `tools.run_precision_refinement` performs one bounded training/validation run, without activation or exposed-test reuse. See [its configuration and compute pilot](../MODEL_IMPROVEMENT.md#follow-up-yolov8s-experiment). It does not launch an infinite retraining loop.
 
 ## Validation profile
 

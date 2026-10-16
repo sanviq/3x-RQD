@@ -1,10 +1,10 @@
-**Current workflow:** [compact real multinational dataset, GitHub access and approved training](COMPACT.md). The full-archive instructions below are optional; the full download was stopped in favour of the compact subset.
+**Current workflow:** [expanded experiment, completed results and refinement](../../MODEL_IMPROVEMENT.md), with [compact dataset access](COMPACT.md). The full-archive instructions below are optional; the full download was stopped in favour of the compact subset.
 
 # RDD2022 provenance and team access
 
 The data comes from the [official RDD2022 Figshare release](https://figshare.com/articles/dataset/21431547), DOI `10.6084/m9.figshare.21431547.v1`, licensed CC BY 4.0. The publisher's exact file size, MD5, country subsets, class mapping and citation are recorded in [RDD2022.source.json](RDD2022.source.json). Cite the dataset authors when using the data or reporting results.
 
-Each teammate can download the same verified original archive. The 13,264,172,619-byte archive and prepared images stay **outside Git**. GitHub contains source provenance and reproducible commands; it does not host the dataset or checkpoints. Do not force-add ignored data files. Published image totals are not a local audit.
+Each teammate can download the same verified original archive. The 13,264,172,619-byte archive and prepared images stay **outside Git**. Git history contains source provenance, small examples and reproducible commands; the compact datasets and checkpoints are shared separately as GitHub Release assets. Do not force-add ignored data files. Published image totals are not a local audit.
 
 From the repository root, with Python 3.12 and the existing environment:
 
@@ -61,7 +61,7 @@ Evaluate validation first:
 
 Freeze model choice and inference settings using validation only. For the untouched held-out test, use a new output, `--split test`, and `--frozen-sha256 EXACT_BEST_CHECKPOINT_SHA256`. Do not tune on test or select the better checkpoint after seeing test results. Hashes are printed at training completion; `shasum -a 256 /path/to/best.pt` also reports the hash.
 
-Outputs include aggregate/per-class precision, recall, F1 and AP, mAP50/mAP50:95, Ultralytics PR/confusion plots, raw predictions, explicit-threshold FP/FN counts and annotated examples (green ground truth, red predictions). AP uses confidence ranking down to 0.001; diagnostic P/R use `--confidence` (default .25) and box IoU .5. Ultralytics' reported P/R use its operating-point convention. No segmentation accuracy is claimed: RDD2022 provides boxes. A model improvement claim requires comparable held-out results from a legitimate baseline; no road-trained baseline is currently available.
+Outputs include aggregate/per-class precision, recall, F1 and AP, mAP50/mAP50:95, Ultralytics PR/confusion plots, raw predictions, explicit-threshold FP/FN counts and annotated examples (green ground truth, red predictions). AP uses confidence ranking down to 0.001; diagnostic P/R use `--confidence` (default .25) and box IoU .5. Ultralytics' reported P/R use its operating-point convention. No segmentation accuracy is claimed: RDD2022 provides boxes. A model improvement claim requires comparable held-out results from a legitimate baseline; a matched road-trained baseline comparison is now recorded in [the expanded results](results/improvement-v2/README.md).
 
 # Backend integration gate
 

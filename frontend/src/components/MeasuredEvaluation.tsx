@@ -25,8 +25,8 @@ export function MeasuredEvaluation(){
  const percent=(n:number)=>(n*100).toFixed(1)+'%';
  return <section className="panel"><PanelTitle title="Measured RDD2022 evaluation" eyebrow="REAL LABELLED HOLDOUT"><Badge>{report?.run??'Loading…'}</Badge></PanelTitle>
  {progress&&<p role="status">Local improvement job: {progress.phase.replaceAll('_',' ')}{progress.completed_epochs!=null?' · '+progress.completed_epochs+' / '+progress.target_epochs+' epochs':''}{progress.collected_images!=null?' · '+progress.collected_images+' / '+progress.target_images+' images':''}. {progress.notice}</p>}
- {progress?.heartbeat_stale&&<Note tone="warning">Training status has not updated recently. The process may be paused or stopped; the last saved epoch is shown.</Note>}
- {progress?.latest_validation&&<div aria-label="Interim training validation">
+ {progress?.heartbeat_stale&&!['complete','failed','stopped','not_running','status_unavailable'].includes(progress.phase)&&<Note tone="warning">Training status has not updated recently. The process may be paused or stopped; the last saved epoch is shown.</Note>}
+ {progress?.phase==='training'&&progress.latest_validation&&<div aria-label="Interim training validation">
  <h3>Current run · interim validation, epoch {progress.latest_validation.epoch}</h3>
  <p>Precision {percent(progress.latest_validation.precision)} · Recall {percent(progress.latest_validation.recall)} · mAP@.50 {percent(progress.latest_validation.map50)} · mAP@.50:.95 {percent(progress.latest_validation.map50_95)}</p>
  <p className="fine-print">These are training-time validation metrics at Ultralytics' operating point. They can fluctuate between epochs and are separate from final test results below. Higher confidence thresholds may reduce false positives while also missing more defects.</p>

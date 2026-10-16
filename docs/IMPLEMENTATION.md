@@ -94,8 +94,9 @@ Use detection weights for boxes or segmentation weights for masks. Bounding boxe
 The existing `train.py` trains a separate tabular-feature surface-score regressor; it does not train YOLO. Optional detector training is explicit:
 
 ```sh
-.venv-roadhealth/bin/python train_detector.py /path/to/road-dataset.yaml \
-  --base /path/to/trusted-local-yolov8n-seg.pt --device cpu
+.venv-roadhealth/bin/python train_detector.py /path/to/prepared/data.yaml \
+  --base /path/to/trusted-local-yolov8n.pt \
+  --output /path/to/new-run --device cpu
 ```
 
 Supply YOLO images/labels and dataset YAML with complete class names. Split entire routes/nearby frames/repeated visits between train/validation/test to reduce leakage. Do not use training examples as evaluation evidence. Sensor road alignment, planar scale calibration and actual depth need their own acquisition/validation. Costs, deterioration rules and road scoring require engineering calibration.

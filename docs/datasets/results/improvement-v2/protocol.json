@@ -1,0 +1,24 @@
+{
+  "approval": "User authorized extra data, preprocessing experiments, training, phase 5 integration and publication on 2026-10-16.",
+  "target_images": 5250,
+  "raw_mib_cap": 1800,
+  "epochs": 50,
+  "imgsz": 768,
+  "batch": 2,
+  "lr": 0.0005,
+  "mosaic": 0.5,
+  "scale": 0.3,
+  "degrees": 2,
+  "seed": 42,
+  "device": "mps",
+  "base_sha256": "924b44828eb8fda4bc87614a7107c450a3f5a9d679d8f48373f5d52ddf1db11d",
+  "prior_manifest_sha256": "99df925d4944dfd3902db6f2257a82897d9751781eed9ea2ca96dfda4a39ba42",
+  "gates": {
+    "precision": 0.5,
+    "recall": 0.3,
+    "map50": 0.3,
+    "class_ap50": 0.1
+  },
+  "policy": "Keep all old weights/data. Select checkpoint and threshold on validation only. Freeze SHA before final test. Only new groups may enter final test. Baseline versus candidate on the identical new test; require precision, recall, F1 and mAP improvement for automatic activation. No repeated test-based tuning.",
+  "preprocessing": "Aspect-preserving letterbox, BGR to RGB, float /255. Higher training/inference resolution. No unvalidated denoising, contrast equalization or deblurring imposed on real images."
+}

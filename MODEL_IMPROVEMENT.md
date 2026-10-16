@@ -2,6 +2,35 @@
 
 The existing teammate frontend, footprint mapping, connected networks, four-wheel driving physics, and repair/weather workflows are retained. Their `24593f2` changes were fetched and fast-forwarded locally on 16 October 2026. Pre-existing uncommitted work was backed up outside the repository before syncing.
 
+## Latest completed results
+
+The expanded YOLOv8n run finished all 50 epochs. On the same 511-image internal held-out test at confidence .35, the old pipeline achieved precision 53.8%, recall 13.1% and mAP@.50 24.5%; the new pipeline achieved **59.2%, 25.1% and 32.4%**, respectively. This compares complete pipelines at 640 versus 768 px. The candidate improved but failed the recall gate and remains inactive. The **90% precision target is not reached**.
+
+The [measured reports](docs/datasets/results/improvement-v2/README.md) and [release assets](https://github.com/sanviq/3x-RQD/releases/tag/rdd2022-improvement-v2) are published. The 1.28 GB selected-original archive, checkpoint, hashes and evaluation evidence have finished uploading.
+
+## Follow-up YOLOv8s experiment
+
+**Stopped for the project deadline.** No YOLOv8s training is currently running. Partial weights are preserved, and its early-epoch metrics do not replace the completed v2 detector results. The configuration below records the attempted experiment; rerunning it starts an expensive job and is not needed to launch the application.
+
+A validation-only trial of the same frozen v2 checkpoint at 1024 px reduced precision from 60.0% to 53.0%, recall from 24.2% to 23.6% and mAP@.50 from 33.4% to 30.4%. That setting was rejected. See [the reproducible comparison](docs/datasets/results/precision-refinement-v3/resolution-check.json).
+
+The next bounded experiment trains **YOLOv8s** from official generic pretrained weights on the same 2,851 training images, with the same 803-image validation split. It uses up to 50 epochs, 768 px, batch 1, AdamW learning rate .001, seed 42, mosaic .5, scale .3, rotation 2 degrees and patience 15. Capacity and initialization differ from the nano warm start, so the experiment does not isolate a single causal factor.
+
+The 96-training/32-validation-image compute pilot completed two epochs on this 8 GB M3 Mac. Its warm training epoch took 16.34 seconds; linear extrapolation is about **6.74 training-only hours for 50 epochs**, with full validation, checkpointing and thermal effects additional. Pilot metrics are not accuracy evidence. Data and original weights remain unchanged; progress, logs and checkpoints live outside Git under `~/Datasets/RDD2022/precision-refinement-v3/yolov8s-50`.
+
+```sh
+.venv-roadhealth/bin/python -m tools.run_precision_refinement \
+  /path/to/improvement-v2/prepared/data.yaml \
+  --base /path/to/trusted/yolov8s.pt \
+  --baseline-validation /path/to/improvement-v2/candidate-validation/report.json \
+  --output /path/to/new-experiment \
+  --epochs 50 --imgsz 768 --batch 1 --lr .001 --device mps --register
+```
+
+The runner refuses to overwrite a run, preserves the previous local training pointer, saves best/resume checkpoints, and evaluates **validation only**. It records improvements and regressions at a matched confidence threshold and writes the precision-target profile. It never activates the model or silently repeats the exposed 511-image test. A selected candidate still needs a newly reserved independent holdout for final confirmation. Check the website's **Model evaluation** page for live status.
+
+The older protocol below documents how the completed v2 experiment was run.
+
 ## Measured starting point
 
 The compact-v1 checkpoint completed 50 epochs. On its original internal test, mAP@.50 was .2871 and mAP@.50:.95 was .1298. At confidence .35, precision was .5508, recall .1435 and F1 .2277. These are different quantities from Ultralytics' automatically selected precision/recall operating point. It failed the prototype activation checks and remains experimental.

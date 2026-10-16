@@ -1,0 +1,76 @@
+{
+  "split": "val",
+  "images": 803,
+  "checkpoint_sha256": "56b7de26050d65e52d090a6ea914c21c028544474e9125ed33cac45ed03803a3",
+  "dataset_manifest_sha256": "1293464c1a1c510fe42f798dfed2c40e3a44960499caa017ec990b9e6298fdaa",
+  "baseline_imgsz": 768,
+  "candidate_imgsz": 1024,
+  "baseline_diagnostic": {
+    "confidence": 0.35,
+    "iou": 0.5,
+    "precision": 0.6,
+    "recall": 0.24205685618729098,
+    "f1": 0.34495084897229666,
+    "tp": 579,
+    "fp": 386,
+    "fn": 1813,
+    "per_class_counts": {
+      "D00": {
+        "tp": 213,
+        "fp": 137,
+        "fn": 834
+      },
+      "D10": {
+        "tp": 116,
+        "fp": 76,
+        "fn": 378
+      },
+      "D20": {
+        "tp": 142,
+        "fp": 89,
+        "fn": 274
+      },
+      "D40": {
+        "tp": 108,
+        "fp": 84,
+        "fn": 327
+      }
+    }
+  },
+  "candidate_diagnostic": {
+    "confidence": 0.35,
+    "iou": 0.5,
+    "precision": 0.5300187617260788,
+    "recall": 0.23620401337792643,
+    "f1": 0.32677848467322157,
+    "tp": 565,
+    "fp": 501,
+    "fn": 1827,
+    "per_class_counts": {
+      "D00": {
+        "tp": 217,
+        "fp": 178,
+        "fn": 830
+      },
+      "D10": {
+        "tp": 117,
+        "fp": 126,
+        "fn": 377
+      },
+      "D20": {
+        "tp": 127,
+        "fp": 96,
+        "fn": 289
+      },
+      "D40": {
+        "tp": 104,
+        "fp": 101,
+        "fn": 331
+      }
+    }
+  },
+  "baseline_map50": 0.33408166327184385,
+  "candidate_map50": 0.3044803673822046,
+  "decision": "Reject 1024 px inference for this checkpoint; retain 768 px. It increased false positives without a recall gain.",
+  "notice": "Validation-only resolution trial; no held-out inference or deployment. Source images, checkpoint and threshold .35 are unchanged; batch changes from 2 to 1 for memory."
+}

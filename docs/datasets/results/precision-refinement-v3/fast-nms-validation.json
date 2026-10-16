@@ -1,0 +1,53 @@
+{
+  "split": "val",
+  "checkpoint_sha256": "56b7de26050d65e52d090a6ea914c21c028544474e9125ed33cac45ed03803a3",
+  "experiments": [
+    {
+      "nms_iou": 1,
+      "confidence": 0.35,
+      "precision": 0.6,
+      "recall": 0.24205685618729098,
+      "tp": 579,
+      "fp": 386,
+      "fn": 1813
+    },
+    {
+      "nms_iou": 0.6,
+      "confidence": 0.35,
+      "precision": 0.6266375545851528,
+      "recall": 0.2399665551839465,
+      "tp": 574,
+      "fp": 342,
+      "fn": 1818
+    },
+    {
+      "nms_iou": 0.5,
+      "confidence": 0.35,
+      "precision": 0.6376811594202898,
+      "recall": 0.2391304347826087,
+      "tp": 572,
+      "fp": 325,
+      "fn": 1820
+    },
+    {
+      "nms_iou": 0.4,
+      "confidence": 0.35,
+      "precision": 0.6473265073947668,
+      "recall": 0.23787625418060201,
+      "tp": 569,
+      "fp": 310,
+      "fn": 1823
+    },
+    {
+      "nms_iou": 0.3,
+      "confidence": 0.35,
+      "precision": 0.6517241379310345,
+      "recall": 0.23704013377926422,
+      "tp": 567,
+      "fp": 303,
+      "fn": 1825
+    }
+  ],
+  "notice": "Validation-only postprocessing comparison; no extra inference, test reuse or activation.",
+  "decision": "Additional IoU .50 suppression is a validation candidate: precision 60.0% to 63.8%, recall 24.2% to 23.9%. Not automatically activated; fresh independent confirmation is required. No 90% accuracy claim."
+}

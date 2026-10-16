@@ -13,9 +13,15 @@ def upload_assets(tag,files,repo='sanviq/3x-RQD'):
         for attempt in range(3):
             # Draft releases have no published tag yet, so the tag lookup can
             # return 404 even for the authenticated owner. Listing includes them.
-            releases=json.loads(subprocess.check_output(['gh','api',f'repos/{repo}/releases?per_page=100'],text=True))
+            releases=json.loads(subprocess.check_output(['gh','api',f'repos/{repo}/releases?per_page=100',
+                                                        '-H','Cache-Control: no-cache'],text=True))
             report=next((r for r in releases if r['tag_name']==tag),None)
-            if report is None:raise ValueError('Release not found in authenticated release list: '+tag)
+            # A successful create may precede visibility in the list endpoint.
+            # Retry discovery as well as uploads; never rerun training to recover.
+            if report is None:
+                if attempt==2:raise ValueError('Release not found in authenticated release list: '+tag)
+                time.sleep(5)
+                continue
             existing=next((a for a in report['assets'] if a['name']==file.name),None)
             if existing:
                 if existing.get('digest')!=checksum or existing['size']!=file.stat().st_size:
