@@ -2,7 +2,6 @@ import {RoadQualityCard} from './RoadQualityCard';
 import {NativeWeatherLab} from './NativeWeatherLab';
 import {defaultPhotoSettings} from '../api/repairPhotos';
 import type {PhotoAssumptions} from '../api/repairPhotos';
-import {TwinRegistration} from './TwinRegistration';
 import {VehicleParameters} from './VehicleParameters';
 import {DrivingSummary} from './DrivingSummary';
 import { RepairTools } from './RepairTools';
@@ -25,7 +24,7 @@ import { RoadAnnotations } from './RoadAnnotations';
 import { analyzeRoad } from '../api/roadQuality';
 import { affectedFraction, clamp, defaultGrowth, editMark, markArea, effectiveMarks, initialDrive, recommendRepairs, repairCost, wheelDemoMarks } from '../simulation/model';
 import type { DefectKind, DriveResult, DriveState, GrowthRates, Mark, RoadConfig, Scenario, Waypoint, Weather } from '../simulation/model';
-import { canvasFile, contrastHeatmap, downloadCanvas, sampleTexture, scenarioTexture, textureCanvas, weatherCanvas, weatherFootprint } from '../simulation/image';
+import { canvasFile, downloadCanvas, sampleTexture, scenarioTexture, textureCanvas, weatherCanvas, weatherFootprint } from '../simulation/image';
 import type { CameraMode } from '../simulation/render';
 
 type Props={active:boolean;demo:boolean;selected:string;onNavigate:(p:Page)=>void;analysis:AnalysisController};
@@ -44,8 +43,6 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const [frameTime,setFrameTime]=useState(analysis.videoSource?.frameTime??0);
   const [referenceRevision,setReferenceRevision]=useState(0);
   const [videoReplay,setVideoReplay]=useState(true);
-  const [heatLayer,setHeatLayer]=useState<'Image contrast'|'Defect severity'>('Defect severity');
-  const contrastUrl=useMemo(()=>texture?contrastHeatmap(texture).toDataURL():undefined,[texture]);
   const [imageError,setImageError]=useState('');
   const [marks,setMarks]=useState<Mark[]>(()=>source||analysis.validating?[]:wheelDemoMarks({width:6,length:30,speed:25}));
   const [active,setActive]=useState(marks[0]?.id??'');
@@ -97,7 +94,6 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const surface=useMemo(()=>texture?scenarioTexture(texture,marks,scenario,months,growth):null,[texture,marks,scenario,months,growth]);
   const altered=useMemo(()=>surface?weatherCanvas(surface,weather,intensity):null,[surface,weather,intensity]);
   const scenarioUrl=useMemo(()=>surface?.toDataURL(),[surface]);
-  const originalUrl=useMemo(()=>texture?.toDataURL(),[texture]);
   const alteredUrl=useMemo(()=>altered?.toDataURL(),[altered]);
   const imageKey=JSON.stringify({baseKey,repairKey,scenario,months,growth,weather,intensity});
   const chosenCost=marks.filter(m=>m.repaired).reduce((sum,m)=>sum+repairCost(m,config,rate),0);
@@ -147,7 +143,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   },[source,analysis.detection,analysis.excludedDefects,config]);
 
 
-  useEffect(()=>{if(!visible||!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab))setRunning(false)},[visible,tab]);
+  useEffect(()=>{if(!visible||!['Driving comparison','Repair & deterioration'].includes(tab))setRunning(false)},[visible,tab]);
   useEffect(()=>{setRuns(old=>({Original:old.Original,Repaired:old.Repaired}))},[months,growth]);
   useEffect(()=>{setRuns(old=>({Original:old.Original,Deteriorated:old.Deteriorated}))},[repairKey]);
   useEffect(()=>{
@@ -223,16 +219,16 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   return <div className="page-enter simulation-workspace">
     <div className="page-heading"><div><p className="eyebrow">INTERACTIVE ROAD SIMULATIONS</p><h1>Scenario lab<span className="heading-dot">.</span></h1><p>{source?source.file.name:'Synthetic sample road'} · aligned road area with explicit simulation assumptions.</p></div><div className="action-row"><label className="button secondary file-button"><Icon name="upload" size={16}/>Upload road image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void analysis.select(file)}}/></label><button className="button secondary" onClick={exportScenario}><Icon name="download" size={16}/>Export scenario</button></div></div>
     {source&&<RoadQualityCard score={analysis.qualityScore} busy={analysis.qualityScoreBusy} error={analysis.detectionError||analysis.qualityScoreError} onRefresh={analysis.retryDetection}/>}
-    <Note>{source?'The Wheel and Digital twin views use your rectified road texture and reviewed API contours. Align the outline below and review assumed depth. Scene mode preserves the original capture and optional video replay.':'This is a synthetic sample. Upload a road image to use your own road texture.'} A single photo does not establish road depth, scale, friction, or safe driving speed. Simulation geometry and vehicle response are assumptions; API surface scores are shown separately.</Note>
+    <Note>{source?'The Wheel view uses your rectified road texture and reviewed API contours. Align the outline below and review assumed depth. Scene mode preserves the original capture and optional video replay.':'This is a synthetic sample. Upload a road image to use your own road texture.'} A single photo does not establish road depth, scale, friction, or safe driving speed. Simulation geometry and vehicle response are assumptions; API surface scores are shown separately.</Note>
     {videoError&&<p className="field-error" role="status">{videoError}</p>}
     {(imageError||analysis.errors.image)&&<p className="field-error" role="alert">{imageError||analysis.errors.image}</p>}
-    <div className="segmented lab-tabs" role="group" aria-label="Road simulation tools">{['Driving comparison','Digital twin','Repair & deterioration','Severity heatmap','Weather lab','Repair budget'].map(t=><button key={t} className={tab===t?'active':''} aria-pressed={tab===t} onClick={()=>{setTab(t);if(t==='Digital twin'){setCamera('Orbit');setRotation(-62)}}}><Icon name={t==='Driving comparison'?'car':t==='Digital twin'?'cube':t==='Weather lab'?'sun':t==='Repair budget'?'tool':'layers'} size={16}/>{t}</button>)}</div>
+    <div className="segmented lab-tabs" role="group" aria-label="Road simulation tools">{['Driving comparison','Repair & deterioration','Weather lab','Repair budget'].map(t=><button key={t} className={tab===t?'active':''} aria-pressed={tab===t} onClick={()=>setTab(t)}><Icon name={t==='Driving comparison'?'car':t==='Weather lab'?'sun':t==='Repair budget'?'tool':'layers'} size={16}/>{t}</button>)}</div>
     <div className="sim-layout">
       <div className="results-stack">
         <section className="panel sim-viewer"><PanelTitle title={tab} eyebrow={source?'UPLOADED PHOTO · ASSUMED GEOMETRY':'SYNTHETIC EXAMPLE'}><Badge tone="lavender">{scenario} scenario</Badge></PanelTitle>
           {tab==='Repair & deterioration'&&<RepairTools photo={source?{file:source.file,quad,boxGeometry:analysis.detection?.method==='yolo_rdd_detection',assumptions:photoAssumptions,onAssumptions:setPhotoAssumptions}:undefined} texture={texture} marks={marks} config={config} scenario={scenario} months={months} growth={growth} onScenario={setScenario} onMonths={setMonths} onGrowth={setGrowth} onAll={value=>{setMarks(ms=>ms.map(m=>({...m,repaired:value})));setScenario('Repaired')}} busy={batchBusy} progress={batchProgress} error={batchError} onCompare={compareDrives} onCancel={cancelComparison}/>}
-          <div hidden={!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)}>
-            <RoadCanvas visible={visible&&['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)} canvasRef={canvasRef} texture={surface} twin={twinForRender} marks={current} config={config} path={path} scenario={scenario} running={running} resetId={resetId} scene={scene} camera={camera} rotation={rotation} zoom={zoom} mesh={mesh} guides={guides} playbackRate={playbackRate}
+          <div hidden={!['Driving comparison','Repair & deterioration'].includes(tab)}>
+            <RoadCanvas visible={visible&&['Driving comparison','Repair & deterioration'].includes(tab)} canvasRef={canvasRef} texture={surface} twin={twinForRender} marks={current} config={config} path={path} scenario={scenario} running={running} resetId={resetId} scene={scene} camera={camera} rotation={rotation} zoom={zoom} mesh={mesh} guides={guides} playbackRate={playbackRate}
               onTelemetry={onTelemetry} onComplete={onComplete} onRotate={setRotation} onZoom={setZoom}/>
             <div className="sim-camera-row"><div className="segmented" role="group" aria-label="Simulation camera">{((source?['Wheel','Scene','Orbit','Chase','Driver']:['Wheel','Orbit','Chase','Driver']) as CameraMode[]).map(c=><button key={c} className={camera===c?'active':''} aria-pressed={camera===c} onClick={()=>setCamera(c)}>{c}</button>)}</div>{camera==='Orbit'&&<label className="checkbox-row"><input type="checkbox" checked={mesh} onChange={e=>setMesh(e.target.checked)}/>Surface grid</label>}<label className="checkbox-row"><input type="checkbox" checked={guides} onChange={e=>setGuides(e.target.checked)}/>{camera==='Wheel'?'Defect labels':'Path & edges'}</label></div>
             {camera==='Orbit'&&<div className="twin-controls">
@@ -244,8 +240,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
               <label>Inspect candidate<select className="sim-select" aria-label="Twin focus defect" value={twin.focus??''} onChange={e=>{setTwin(t=>({...t,focus:e.target.value||undefined}));if(e.target.value)setActive(e.target.value);setZoom(1)}}><option value="">Whole road</option>{marks.map(m=><option key={m.id} value={m.id}>{m.id} · {m.kind}</option>)}</select></label>
               <p className="fine-print">Drag to orbit. This is a photo-grounded surface model with assumed depth, not a surveyed reconstruction. Display gain exaggerates relief visually; it never changes the tire physics.</p>
             </div>}
-            {tab==='Digital twin'&&source&&reference&&texture&&<TwinRegistration original={reference} rectified={texture} quad={quad} marks={marks} selected={twin.focus??active} config={config} onSelect={id=>{setActive(id);setTwin(t=>({...t,focus:id}));setZoom(1);setCamera('Orbit')}}/>}
-            {(tab==='Digital twin'||tab==='Repair & deterioration')&&<SurfaceProfile marks={current} config={config} path={path} position={telemetry.z}/>}
+            {tab==='Repair & deterioration'&&<SurfaceProfile marks={current} config={config} path={path} position={telemetry.z}/>}
 
             <div className="sim-telemetry"><div><span>Route progress</span><strong>{number(clamp((telemetry.z-1.6)/(config.length-3.2),0,1)*100,0)}%</strong></div><div><span>Assumed speed</span><strong>{config.speed}<small> km/h</small></strong></div><div><span>Body acceleration</span><strong>{number(telemetry.acceleration)}<small> m/s²</small></strong></div><div><span>Simulated elapsed time</span><strong>{number(telemetry.time,1)}<small> s</small></strong></div></div>
             <div className="action-row"><button className="button primary" disabled={!texture} onClick={startDrive}><Icon name="car" size={17}/>{running?'Pause drive':completed?'Drive again':telemetry.time>0?'Resume drive':'Start drive'}</button><button className="button secondary" onClick={resetDrive}>Reset drive</button><button className="text-button" disabled={!texture} onClick={()=>{if(canvasRef.current)downloadCanvas(canvasRef.current,'synthetic-road-camera.png')}}>Save camera frame<Icon name="download" size={15}/></button></div>
@@ -257,9 +252,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
             <div className="weather-options">{(['None','Shadow','Low light','Glare','Blur','Perspective','Rain'] as Weather[]).map(w=><button key={w} className={'button small '+(weather===w?'primary':'secondary')} aria-pressed={weather===w} onClick={()=>setWeather(w)}>{w}</button>)}</div>
             <label className="field">Effect intensity · {intensity}%<input type="range" min="0" max="100" value={intensity} onChange={e=>setIntensity(Number(e.target.value))}/></label>
             <div className="action-row"><button className="button primary" disabled={!altered||apiBusy} onClick={()=>void compareImages()}>{apiBusy?<><span className="spinner"/>Analyzing image pair…</>:'Analyze original & altered images'}</button><button className="button secondary" disabled={!altered} onClick={()=>{if(altered)downloadCanvas(altered,'synthetic-weather-road.png')}}>Download altered image</button></div><p className="fine-print">Effects change actual canvas pixels. Backend comparison sends both rendered images with calibration omitted. No confidence or accuracy is invented; synthetic stress tests do not establish real-weather performance.</p>
-          </>):tab==='Severity heatmap'?<>
-            <div className="sim-image-pair"><figure><figcaption>Original image</figcaption>{texture&&<img src={originalUrl} alt="Original road image"/>}</figure><figure><figcaption>{heatLayer==='Image contrast'?'Local dark contrast · not defect probability':'API / manual visual severity'}</figcaption>{heatLayer==='Image contrast'?<img src={contrastUrl} alt="Relative dark contrast of the selected road; not inferred defect severity"/>:annotations(true)}</figure></div><div className="segmented" role="group" aria-label="Surface heat layer">{(['Image contrast','Defect severity'] as const).map(layer=><button key={layer} className={heatLayer===layer?'active':''} aria-pressed={heatLayer===layer} onClick={()=>setHeatLayer(layer)}>{layer}</button>)}</div><p className="fine-print">Local dark contrast is calculated from the selected road pixels immediately. It highlights local changes in brightness, which can include shadows, markings, aggregate and damage. It does not classify defects or infer severity, probability, or depth.</p>{heatLayer==='Defect severity'?<><div className="overlay-legend"><span><i className="dot poor"/>High assumed severity</span><span><i className="dot fair"/>Moderate</span><span><i className="dot good"/>Low</span><span>Unmarked areas: unassessed</span></div><Note>Regions use reviewed API visual severity or manual assumptions; they are not calibrated engineering severity. Repaired regions are omitted from the Repaired scenario.</Note></>:<div className="overlay-legend"><span><i className="dot fair"/>Amber/red: stronger local dark contrast</span><span>No defect severity inferred</span></div>}
-          </>:tab==='Repair budget'?<>
+          </>):tab==='Repair budget'?<>
             <label className="field">Repair budget · {money(budget)}<input type="range" min="0" max="500000" step="1000" value={budget} onChange={e=>setBudget(Number(e.target.value))}/></label>
             <label className="field" htmlFor="repair-rate">Assumed repair rate (₹ / m²)</label><input id="repair-rate" type="number" min="1" max="100000" value={rate} onChange={e=>setRate(clamp(Number(e.target.value)||1,1,100000))}/>
             <div className="sim-budget-summary"><span>Selected repairs<strong>{money(chosenCost)}</strong></span><span>{chosenCost>budget?'Over budget':'Remaining'}<strong>{money(Math.abs(budget-chosenCost))}</strong></span></div>
@@ -289,7 +282,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
           <button className="text-button" onClick={()=>setRuns({})}>Clear recorded drives</button>
         </section>
         <section className="panel"><PanelTitle title="Backend analysis of simulation captures"/><Note>These are diagnostic descriptors of generated pixels. No road-health verdict or confidence is available without a validated condition model. Camera frames are submitted as scenes. Original uploaded-image assessments are preserved separately in Surface inspection.</Note>
-          <div className="action-row"><button className="button secondary" disabled={apiBusy||!texture||!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)} onClick={()=>void analyzeFrame()}>Analyze current camera frame</button><button className="text-button" onClick={()=>onNavigate('inspection')}>Open surface inspection<Icon name="arrow" size={15}/></button>{apiBusy&&<button className="text-button" onClick={cancelRequest}>Cancel analysis</button>}</div>
+          <div className="action-row"><button className="button secondary" disabled={apiBusy||!texture||!['Driving comparison','Repair & deterioration'].includes(tab)} onClick={()=>void analyzeFrame()}>Analyze current camera frame</button><button className="text-button" onClick={()=>onNavigate('inspection')}>Open surface inspection<Icon name="arrow" size={15}/></button>{apiBusy&&<button className="text-button" onClick={cancelRequest}>Cancel analysis</button>}</div>
           <div role="status" aria-live="polite" className="input-help">{apiBusy?'Analyzing generated capture…':comparison||frameResult?'Simulation analysis complete.':''}</div>
           {apiError&&<p className="field-error" role="alert">{apiError}</p>}
           {comparison&&<><div className="sim-image-pair">{apiSummary(comparison.original,'Reference image')}{apiSummary(comparison.scenario,'Scenario image')}</div><button className="text-button" onClick={()=>downloadJson({provenance:'Analysis of generated simulation images; uncalibrated',...comparison},'simulation-api-comparison')}>Download exact API results<Icon name="download" size={15}/></button></>}
