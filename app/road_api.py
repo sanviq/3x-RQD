@@ -270,3 +270,5 @@ def digital_twin(req: AssessmentRequest):
 # Dataset files are served individually; never loaded into frontend bundles.
 from app.dataset_examples import router as dataset_router
 router.include_router(dataset_router)
+from app.research import router as research_router
+router.include_router(research_router)

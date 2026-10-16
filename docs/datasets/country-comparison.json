@@ -1,0 +1,230 @@
+{
+  "provenance": "real_rdd2022_human_annotations",
+  "images": 1750,
+  "rows": [
+    {
+      "subset": "China_Drone",
+      "country": "China",
+      "images": 250,
+      "splits": {
+        "train": 188,
+        "test": 43,
+        "val": 19
+      },
+      "annotation_counts": {
+        "D00": 162,
+        "D10": 113,
+        "D20": 106,
+        "D40": 78
+      },
+      "annotation_boxes_per_image": 1.836,
+      "mean_box_union_image_fraction": 0.0963763427734375,
+      "small_box_fraction": 0.19825708061002179,
+      "mean_original_megapixels": 0.262144,
+      "detection_evaluation": {
+        "images": 19,
+        "tp": 14,
+        "fp": 15,
+        "fn": 35,
+        "precision": 0.4827586206896552,
+        "recall": 0.2857142857142857,
+        "f1": 0.358974358974359
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "China_MotorBike",
+      "country": "China",
+      "images": 250,
+      "splits": {
+        "val": 26,
+        "train": 205,
+        "test": 19
+      },
+      "annotation_counts": {
+        "D00": 249,
+        "D10": 114,
+        "D20": 98,
+        "D40": 107
+      },
+      "annotation_boxes_per_image": 2.272,
+      "mean_box_union_image_fraction": 0.21855987548828126,
+      "small_box_fraction": 0.2535211267605634,
+      "mean_original_megapixels": 0.262144,
+      "detection_evaluation": {
+        "images": 26,
+        "tp": 25,
+        "fp": 21,
+        "fn": 30,
+        "precision": 0.5434782608695652,
+        "recall": 0.45454545454545453,
+        "f1": 0.49504950495049505
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "Czech",
+      "country": "Czech",
+      "images": 250,
+      "splits": {
+        "train": 200,
+        "val": 24,
+        "test": 26
+      },
+      "annotation_counts": {
+        "D00": 122,
+        "D10": 119,
+        "D20": 107,
+        "D40": 115
+      },
+      "annotation_boxes_per_image": 1.852,
+      "mean_box_union_image_fraction": 0.0338275146484375,
+      "small_box_fraction": 0.4449244060475162,
+      "mean_original_megapixels": 0.36,
+      "detection_evaluation": {
+        "images": 24,
+        "tp": 4,
+        "fp": 1,
+        "fn": 42,
+        "precision": 0.8,
+        "recall": 0.08695652173913043,
+        "f1": 0.1568627450980392
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "India",
+      "country": "India",
+      "images": 250,
+      "splits": {
+        "train": 201,
+        "val": 25,
+        "test": 24
+      },
+      "annotation_counts": {
+        "D00": 151,
+        "D10": 63,
+        "D20": 120,
+        "D40": 235
+      },
+      "annotation_boxes_per_image": 2.276,
+      "mean_box_union_image_fraction": 0.0945916748046875,
+      "small_box_fraction": 0.3216168717047452,
+      "mean_original_megapixels": 0.5184,
+      "detection_evaluation": {
+        "images": 25,
+        "tp": 7,
+        "fp": 10,
+        "fn": 48,
+        "precision": 0.4117647058823529,
+        "recall": 0.12727272727272726,
+        "f1": 0.19444444444444442
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "Japan",
+      "country": "Japan",
+      "images": 250,
+      "splits": {
+        "train": 201,
+        "test": 24,
+        "val": 25
+      },
+      "annotation_counts": {
+        "D00": 136,
+        "D10": 144,
+        "D20": 132,
+        "D40": 132
+      },
+      "annotation_boxes_per_image": 2.176,
+      "mean_box_union_image_fraction": 0.1038746337890625,
+      "small_box_fraction": 0.40441176470588236,
+      "mean_original_megapixels": 0.422997056,
+      "detection_evaluation": {
+        "images": 25,
+        "tp": 10,
+        "fp": 4,
+        "fn": 40,
+        "precision": 0.7142857142857143,
+        "recall": 0.2,
+        "f1": 0.3125
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "Norway",
+      "country": "Norway",
+      "images": 250,
+      "splits": {
+        "train": 200,
+        "test": 24,
+        "val": 26
+      },
+      "annotation_counts": {
+        "D00": 754,
+        "D10": 180,
+        "D20": 149,
+        "D40": 161
+      },
+      "annotation_boxes_per_image": 4.976,
+      "mean_box_union_image_fraction": 0.0308450927734375,
+      "small_box_fraction": 0.8368167202572347,
+      "mean_original_megapixels": 7.66302446,
+      "detection_evaluation": {
+        "images": 26,
+        "tp": 3,
+        "fp": 6,
+        "fn": 141,
+        "precision": 0.3333333333333333,
+        "recall": 0.020833333333333332,
+        "f1": 0.0392156862745098
+      },
+      "road_health_score": null
+    },
+    {
+      "subset": "United_States",
+      "country": "United_States",
+      "images": 250,
+      "splits": {
+        "train": 200,
+        "val": 25,
+        "test": 25
+      },
+      "annotation_counts": {
+        "D00": 281,
+        "D10": 156,
+        "D20": 118,
+        "D40": 124
+      },
+      "annotation_boxes_per_image": 2.716,
+      "mean_box_union_image_fraction": 0.08204461669921875,
+      "small_box_fraction": 0.41531664212076586,
+      "mean_original_megapixels": 0.4096,
+      "detection_evaluation": {
+        "images": 25,
+        "tp": 9,
+        "fp": 4,
+        "fn": 44,
+        "precision": 0.6923076923076923,
+        "recall": 0.16981132075471697,
+        "f1": 0.27272727272727276
+      },
+      "road_health_score": null
+    }
+  ],
+  "manifest_sha256": "99df925d4944dfd3902db6f2257a82897d9751781eed9ea2ca96dfda4a39ba42",
+  "evaluation_split": "val",
+  "evaluation_checkpoint_sha256": "924b44828eb8fda4bc87614a7107c450a3f5a9d679d8f48373f5d52ddf1db11d",
+  "source": "https://figshare.com/articles/dataset/21431547",
+  "license": "CC BY 4.0",
+  "coverage_method": "Approximate union of human bounding rectangles on a 256-square normalized image grid; includes background inside boxes and is not segmentation or physical damaged area.",
+  "notice": "Class-enriched research samples, not representative road surveys. Compare these captures only, not national road quality. Drone and motorbike views are distinct. Differences may reflect camera angle, resolution, annotation size and class mix; climate, materials, maintenance quality and causal explanations are not established.",
+  "needed_for_country_quality_comparison": [
+    "Representative route sampling and inspected distances",
+    "Matched cameras, calibration and capture conditions",
+    "Independent condition/severity ratings",
+    "Traffic, weather, construction and maintenance records",
+    "Country- and route-disjoint detector validation"
+  ]
+}

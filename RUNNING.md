@@ -118,3 +118,30 @@ See SCENARIO_LAB.md for the revised purpose, state consistency rules, rendering 
 ## Connected networks and automatic image analysis
 
 See [NETWORK_AND_ANALYSIS.md](NETWORK_AND_ANALYSIS.md) for GeoJSON import, shared-junction routing, capture assignment, selected-road feature extraction and digital-twin registration. Full texture/aggregate analysis now runs automatically on upload and road-footprint changes. Measurement edits can be submitted with Analyze surface.
+
+## Mac training integration (16 October 2026)
+
+The local project now supports the trained RDD2022 detector through the existing
+teammate inspection and driving UI. See [MODEL_IMPROVEMENT.md](MODEL_IMPROVEMENT.md)
+for measured results, the expanded training run, model activation and limitations.
+`node dev.mjs` recognizes `.venv-roadhealth` as well as `.venv`; optionally set
+`ROAD_HEALTH_PYTHON` to an installed environment's Python executable.
+
+For this Mac:
+
+```sh
+cd /Users/SANVI/Downloads/3x-rqd
+node dev.mjs
+```
+
+If the managed backend is already running on port 8000, open
+http://127.0.0.1:8000 to use its compiled frontend, or start only the frontend:
+
+```sh
+cd /Users/SANVI/Downloads/3x-rqd/frontend
+npm run dev
+```
+
+Use **Model evaluation** to view genuine recorded metrics and local training
+progress. **Surface inspection** includes the real country sample comparison.
+Datasets are kept outside the website; their size does not become the web bundle size.

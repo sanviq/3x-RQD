@@ -20,9 +20,10 @@ from PIL import Image
 
 
 class RangeSource:
-    def __init__(self, original=None, cache=None):
+    def __init__(self, original=None, cache=None, reuse_cache=None):
         self.original=Path(original) if original else None
         self.cache=Path(cache) if cache else None
+        self.reuse_cache=Path(reuse_cache) if reuse_cache else None
         if self.cache:self.cache.mkdir(parents=True,exist_ok=True)
         self.ranges=[];self.lock=threading.Lock();self.network_bytes=0;self.local_bytes=0
         if self.original:
@@ -48,6 +49,9 @@ class RangeSource:
             path=self.cache/f'{page:08d}.bin' if self.cache else None
             with self.lock:data=self.memory.get(page)
             if data is None and path and path.is_file():data=path.read_bytes()
+            if data is None and self.reuse_cache:
+                previous=self.reuse_cache/f'{page:08d}.bin'
+                if previous.is_file():data=previous.read_bytes()
             if data is None:
                 for attempt in range(4):
                     try:
@@ -94,9 +98,9 @@ def country_archive(source,info):
     return zipfile.ZipFile(Slice(source,offset,info.file_size))
 
 
-def collect(original,output,per_subset=250,seed=42,max_mib=650):
+def collect(original,output,per_subset=250,seed=42,max_mib=650,reuse=None):
     output=Path(output).resolve();output.mkdir(parents=True,exist_ok=True)
-    source=RangeSource(original,output/'range-cache')
+    source=RangeSource(original,output/'range-cache',Path(reuse)/'range-cache' if reuse else None)
     report={'status':'collecting','source_url':URL,'source_file_id':38030910,'seed':seed,'target_per_subset':per_subset,
             'raw_byte_budget':max_mib*1024**2,'class_mapping':CLASSES,'subsets':{},
             'location_scope':'Six countries; China has drone/motorbike subsets. Indian state/route metadata not established.',
@@ -158,7 +162,8 @@ def collect(original,output,per_subset=250,seed=42,max_mib=650):
                 image_path=output/'raw'/country/'train/images'/Path(item['image'].filename).name
                 xml_path=output/'raw'/country/'train/annotations/xmls'/Path(item['xml'].filename).name
                 image_path.parent.mkdir(parents=True,exist_ok=True);xml_path.parent.mkdir(parents=True,exist_ok=True)
-                data=image_path.read_bytes() if image_path.exists() else z.read(item['image'])
+                previous=Path(reuse)/'raw'/country/'train/images'/image_path.name if reuse else None
+                data=image_path.read_bytes() if image_path.exists() else previous.read_bytes() if previous and previous.is_file() else z.read(item['image'])
                 # Existing cached files must also match the original member CRC.
                 if len(data)!=item['image'].file_size or zlib.crc32(data)!=item['image'].CRC:raise ValueError('Image CRC mismatch')
                 with Image.open(io.BytesIO(data)) as im:im.verify()
@@ -191,6 +196,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--original',type=Path);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--per-subset',type=int,default=250);p.add_argument('--seed',type=int,default=42);p.add_argument('--max-mib',type=int,default=650)
+    p.add_argument('--reuse',type=Path,help='Read unchanged existing selected pairs and cached ranges before using the network')
     a=p.parse_args()
-    if not 20<=a.per_subset<=1000 or not 20<=a.max_mib<=1000:p.error('Use a bounded subset: 20..1000 images/view and 20..1000 MiB')
-    collect(a.original,a.output,a.per_subset,a.seed,a.max_mib)
+    if not 20<=a.per_subset<=1000 or not 20<=a.max_mib<=2200:p.error('Use a bounded subset: 20..1000 images/view and 20..2200 MiB')
+    collect(a.original,a.output,a.per_subset,a.seed,a.max_mib,a.reuse)

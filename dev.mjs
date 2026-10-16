@@ -3,7 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 const root=dirname(fileURLToPath(import.meta.url));
-const python=join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
+const pythonSuffix=process.platform==='win32'?'Scripts/python.exe':'bin/python';
+const roadPython=join(root,'.venv-roadhealth',pythonSuffix);
+const python=process.env.ROAD_HEALTH_PYTHON||(existsSync(roadPython)?roadPython:join(root,'.venv',pythonSuffix));
 const vite=join(root,'frontend/node_modules/vite/bin/vite.js');
 if(!existsSync(python)||!existsSync(vite)){
   console.error('First install backend dependencies in .venv and run npm install inside frontend/. See RUNNING.md.');

@@ -45,11 +45,12 @@ export interface RoadDefect {
   polygon:DefectPoint[];road_polygon:DefectPoint[];
   bbox:{x:number;y:number;width:number;height:number};
   bbox_normalized:{x:number;y:number;width:number;height:number};
-  area_fraction:number;provenance:'opencv_candidate';depth_mm:null;physical_dimensions:null;
-  evidence:{local_contrast:number;boundary_strength:number;solidity:number};
+  area_fraction:number;provenance:'opencv_candidate'|'yolo_prediction';depth_mm:null;physical_dimensions:null;
+  detection_code?:string;detection_label?:string;geometry_source?:'bounding_box_schematic';
+  evidence:{local_contrast?:number;boundary_strength?:number;solidity?:number;detection_code?:string;detection_label?:string};
 }
 export interface DefectDetection {
-  version:string;method:'opencv_multiscale_contours';coordinate_system:'normalized_exif_oriented_original';
+  version:string;method:'opencv_multiscale_contours'|'yolo_rdd_detection';coordinate_system:'normalized_exif_oriented_original';
   road_quad:[DefectPoint,DefectPoint,DefectPoint,DefectPoint];image:{width:number;height:number};
   defects:RoadDefect[];warnings:string[];confidence_calibrated:false;requires_review:true;
 }

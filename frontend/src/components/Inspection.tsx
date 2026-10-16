@@ -1,4 +1,5 @@
 import { DefectReview } from './DefectReview';
+import { CountryComparison } from './CountryComparison';
 import { useRef, useState } from 'react';
 import { DetectionWorkspace } from './DetectionWorkspace';
 import type { AnalysisController } from '../hooks/useAnalysis';
@@ -62,5 +63,6 @@ export function Inspection({analysis,onSimulate}:{analysis:AnalysisController;on
       </div>
     </div>
     <DetectionWorkspace image={analysis.selected?.file} scale={analysis.scale} pitch={analysis.pitch}/>
+    <CountryComparison/>
   </div>;
 }

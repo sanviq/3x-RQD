@@ -129,6 +129,7 @@ def test_detector_keeps_all_four_rdd_codes_with_compatible_api_classes(tmp_path,
     model=SimpleNamespace(predict=lambda *a,**kw:[result])
     file=tmp_path/'fixture.pt';file.write_bytes(b'not-real-weights')
     monkeypatch.setattr(d,'MODEL_PATH',str(file));monkeypatch.setattr(d,'_model',model)
+    monkeypatch.setattr(d,'_loaded_path',str(file))
     predictions=d.predict(np.zeros((100,100,3),np.uint8),mode='model')
     assert [p.detection_code for p in predictions]==['D00','D10','D20','D40']
     assert [p.class_name for p in predictions]==['crack','crack','crack','pothole']

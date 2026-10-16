@@ -7,7 +7,7 @@ import zipfile
 from tools.prepare_rdd2022 import file_sha256
 
 
-def package(source,destination):
+def package(source,destination,max_mib=700):
     source,destination=Path(source).resolve(),Path(destination).resolve()
     audit=json.loads((source/'collection-audit.json').read_text())
     if audit['status']!='complete':raise ValueError('Collection must be complete')
@@ -20,7 +20,8 @@ def package(source,destination):
                 path=source/item[key]
                 if source not in path.resolve().parents or file_sha256(path)!=item[hash_key]:raise ValueError('Unsafe or changed raw file')
                 files.append(path)
-    if sum(p.stat().st_size for p in files)>700*1024**2:raise ValueError('Release data exceeds compact 700 MiB bound')
+    if (source/'prior-manifest.json').is_file():files.append(source/'prior-manifest.json')
+    if sum(p.stat().st_size for p in files)>max_mib*1024**2:raise ValueError('Release data exceeds the declared compact byte bound')
     notice='''RDD2022 COMPACT DEVELOPMENT SUBSET — REAL DATA
 
 Source: https://figshare.com/articles/dataset/21431547
@@ -39,6 +40,9 @@ Inventory SHA256 values identify each original file; archive CRCs were checked d
 No full-parent-archive MD5 verification is claimed for selective range retrieval.
 
 Run tools.build_compact_dataset from 3x-RQD to reproduce grouped YOLO splits.
+For improvement-v2, pass --prior-manifest prior-manifest.json and provide the
+embedded duplicate thumbnails are used to protect the original splits. See
+MODEL_IMPROVEMENT.md for the exact preparation and split policy.
 Do not train on held-out validation/test data or manually tune against their images.
 https://github.com/sanviq/3x-RQD/tree/main/docs/datasets
 '''
@@ -56,4 +60,5 @@ https://github.com/sanviq/3x-RQD/tree/main/docs/datasets
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();package(a.source,a.output)
+    p.add_argument('--max-mib',type=int,default=700)
+    a=p.parse_args();package(a.source,a.output,a.max_mib)

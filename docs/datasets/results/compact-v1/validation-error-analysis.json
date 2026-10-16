@@ -1,0 +1,139 @@
+{
+  "split": "val",
+  "checkpoint_sha256": "924b44828eb8fda4bc87614a7107c450a3f5a9d679d8f48373f5d52ddf1db11d",
+  "threshold_sweep": [
+    {
+      "confidence": 0.05,
+      "precision": 0.16051912568306012,
+      "recall": 0.5199115044247787,
+      "f1": 0.2453027139874739,
+      "tp": 235,
+      "fp": 1229,
+      "fn": 217
+    },
+    {
+      "confidence": 0.1,
+      "precision": 0.24929577464788732,
+      "recall": 0.3915929203539823,
+      "f1": 0.3046471600688468,
+      "tp": 177,
+      "fp": 533,
+      "fn": 275
+    },
+    {
+      "confidence": 0.15,
+      "precision": 0.3347921225382932,
+      "recall": 0.33849557522123896,
+      "f1": 0.33663366336633666,
+      "tp": 153,
+      "fp": 304,
+      "fn": 299
+    },
+    {
+      "confidence": 0.2,
+      "precision": 0.37538461538461537,
+      "recall": 0.26991150442477874,
+      "f1": 0.31402831402831405,
+      "tp": 122,
+      "fp": 203,
+      "fn": 330
+    },
+    {
+      "confidence": 0.25,
+      "precision": 0.4491525423728814,
+      "recall": 0.2345132743362832,
+      "f1": 0.3081395348837209,
+      "tp": 106,
+      "fp": 130,
+      "fn": 346
+    },
+    {
+      "confidence": 0.3,
+      "precision": 0.49122807017543857,
+      "recall": 0.18584070796460178,
+      "f1": 0.2696629213483146,
+      "tp": 84,
+      "fp": 87,
+      "fn": 368
+    },
+    {
+      "confidence": 0.35,
+      "precision": 0.5413533834586466,
+      "recall": 0.1592920353982301,
+      "f1": 0.24615384615384614,
+      "tp": 72,
+      "fp": 61,
+      "fn": 380
+    },
+    {
+      "confidence": 0.4,
+      "precision": 0.6355140186915887,
+      "recall": 0.1504424778761062,
+      "f1": 0.24329159212880144,
+      "tp": 68,
+      "fp": 39,
+      "fn": 384
+    },
+    {
+      "confidence": 0.45,
+      "precision": 0.7160493827160493,
+      "recall": 0.12831858407079647,
+      "f1": 0.21763602251407133,
+      "tp": 58,
+      "fp": 23,
+      "fn": 394
+    },
+    {
+      "confidence": 0.5,
+      "precision": 0.7571428571428571,
+      "recall": 0.1172566371681416,
+      "f1": 0.20306513409961685,
+      "tp": 53,
+      "fp": 17,
+      "fn": 399
+    },
+    {
+      "confidence": 0.6,
+      "precision": 0.7777777777777778,
+      "recall": 0.07743362831858407,
+      "f1": 0.14084507042253522,
+      "tp": 35,
+      "fp": 10,
+      "fn": 417
+    },
+    {
+      "confidence": 0.7,
+      "precision": 0.8076923076923077,
+      "recall": 0.046460176991150445,
+      "f1": 0.08786610878661089,
+      "tp": 21,
+      "fp": 5,
+      "fn": 431
+    },
+    {
+      "confidence": 0.8,
+      "precision": 0.9411764705882353,
+      "recall": 0.035398230088495575,
+      "f1": 0.06823027718550106,
+      "tp": 16,
+      "fp": 1,
+      "fn": 436
+    }
+  ],
+  "selected_operating_point": null,
+  "misses_by_normalized_box_area": {
+    "small_under_1pct": {
+      "ground_truth": 225,
+      "missed": 205
+    },
+    "medium_1_to_10pct": {
+      "ground_truth": 189,
+      "missed": 163
+    },
+    "large_over_10pct": {
+      "ground_truth": 38,
+      "missed": 12
+    }
+  },
+  "notice": "Operating point selected on validation only with precision >= .50 and recall >= .30. Area refers to annotation rectangles, not actual damage. No threshold can substitute for model quality."
+}

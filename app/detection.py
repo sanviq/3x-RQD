@@ -9,9 +9,11 @@ import cv2
 import numpy as np
 
 from app.assessment import Defect, CLASSES, assess, Inclination, mask_for
+from app.model_registry import selected_model
 
 MODEL_PATH = os.environ.get('ROAD_HEALTH_MODEL', '')
 _model = None
+_loaded_path = None
 _lock = threading.Lock()
 ALIASES = {'potholes': 'pothole', 'longitudinal_crack': 'crack', 'transverse_crack': 'crack',
            'alligator_crack': 'crack', 'patch': 'repair_patch', 'raveling': 'ravelling',
@@ -24,8 +26,9 @@ RDD_CODES = {**{c.lower(): c for c in RDD_LABELS}, 'longitudinal_crack': 'D00',
 
 
 def model_status():
-    return {'configured': bool(MODEL_PATH and Path(MODEL_PATH).exists()),
-            'loaded': _model is not None, 'mode': 'model' if MODEL_PATH and Path(MODEL_PATH).exists() else 'demo',
+    selection=selected_model(MODEL_PATH)
+    return {**{k:v for k,v in selection.items() if k!='path'},
+            'loaded': _model is not None, 'mode': 'model' if selection['configured'] else 'demo',
             'requires': 'Trusted road-specific YOLO detection/segmentation weights and requirements-model.txt. Generic COCO weights do not recognize road-defect classes.',
             'supported_classes': CLASSES}
 
@@ -111,18 +114,20 @@ def image_quality(image):
 
 
 def predict(image, mode='demo', confidence=.35, resolution=640, seed=1):
-    global _model
+    global _model, _loaded_path
     if mode == 'demo':
         return [d for d in demo_defects(seed) if d.confidence>=confidence]
-    if not MODEL_PATH or not Path(MODEL_PATH).exists():
+    selection=selected_model(MODEL_PATH)
+    if not selection['configured']:
         raise ValueError('No trained road-defect model configured. Use Demo or set ROAD_HEALTH_MODEL and install requirements-model.txt.')
     with _lock:
-        if _model is None:
+        if _model is None or _loaded_path != selection['path']:
             try:
                 from ultralytics import YOLO
             except ImportError as exc:
                 raise ValueError('Install requirements-model.txt to enable YOLO inference.') from exc
-            _model = YOLO(MODEL_PATH)
+            _model = YOLO(selection['path'])
+            _loaded_path = selection['path']
         prediction = _model.predict(image, conf=confidence, imgsz=resolution, device='cpu', verbose=False, max_det=100)[0]
         h,w = image.shape[:2]
         defects=[]
@@ -176,7 +181,8 @@ class Tracker:
         self.tracks={k:v for k,v in self.tracks.items() if self.frame-v[2]<=8}
         available=set(self.tracks)
         for d in defects:
-            candidates=[(iou(d.bbox,self.tracks[k][0]),k) for k in available if self.tracks[k][1]==d.class_name]
+            track_class=d.detection_code or d.class_name
+            candidates=[(iou(d.bbox,self.tracks[k][0]),k) for k in available if self.tracks[k][1]==track_class]
             best=max(candidates,default=(0,None))
             if best[0]>.25:
                 track=best[1]
@@ -186,7 +192,7 @@ class Tracker:
                 self.next_id+=1
             d.track_id=track
             d.id=f'track-{track}'
-            self.tracks[track]=(d.bbox,d.class_name,self.frame)
+            self.tracks[track]=(d.bbox,track_class,self.frame)
             self.seen.add(track)
         return defects
 
@@ -225,7 +231,7 @@ def inspect(image, mode='demo', confidence=.35, resolution=640, mm_per_pixel=Non
     started=time.perf_counter()
     original_h,original_w=image.shape[:2]
     scale=min(1,resolution/max(original_h,original_w))
-    image=cv2.resize(image,(max(64,round(original_w*scale)),max(64,round(original_h*scale))))
+    image=cv2.resize(image,(max(1,round(original_w*scale)),max(1,round(original_h*scale))),interpolation=cv2.INTER_AREA)
     image=stress_image(image,effect,strength)
     detect_started=time.perf_counter()
     defects=[d.model_copy(deep=True) for d in fixture_defects if d.confidence >= confidence] if mode=='demo' and fixture_defects is not None else predict(image,mode,confidence,resolution,seed)
@@ -242,6 +248,10 @@ def inspect(image, mode='demo', confidence=.35, resolution=640, mm_per_pixel=Non
         if insufficient:
             assessment['explanation'] = 'Insufficient detection evidence: no detections or low mean detection confidence. This does not establish a healthy road. Repeat capture and review model coverage. ' + assessment['explanation']
     if mode == 'model':
+        assessment['candidate_score'] = assessment.get('candidate_score',assessment['score'])
+        assessment['score'] = None
+        assessment['band'] = 'Unassessable'
+        assessment['limitations'].append('Detection training does not validate a road-health formula. Candidate score is an unvalidated heuristic; an engineering health grade is withheld.')
         assessment['limitations'].append('RDD2022 covers four damage types only. Undetected ravelling, roughness, patches and material condition are not established as absent. Confidence measures detection certainty, not road quality.')
     images=visuals(image,defects)
     elapsed=(time.perf_counter()-started)*1000

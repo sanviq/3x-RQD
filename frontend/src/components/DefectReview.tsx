@@ -7,6 +7,7 @@ export function DefectReview({url,detection,busy,error,excluded=[],onToggle,onRe
   const [outlines,setOutlines]=useState(true);
   const labelled=new Set([...(detection?.defects??[])].sort((a,b)=>b.area_fraction-a.area_fraction).slice(0,12).map(d=>d.id));
   return <section className="panel defect-review"><PanelTitle title="Detected road candidates"><Badge>{busy?'Detecting…':detection?detection.defects.length+' candidates':'Not detected'}</Badge></PanelTitle>
+    {detection?.method==='yolo_rdd_detection'&&<p className="input-help">Trained RDD2022 detector · D00, D10, D20 and D40. Outlines are schematic bounding boxes, not segmentation or measured depth. Confidence is not road quality.</p>}
     <p className="input-help">The image is sent to the API automatically. Review the pixel-based candidates before using them. Labels, severity and confidence are unvalidated estimates; metric depth is unknown.</p>
     <div className="action-row"><label className="checkbox-row"><input type="checkbox" checked={outlines} onChange={e=>setOutlines(e.target.checked)}/>Show defect outlines</label><button className="text-button" disabled={busy} onClick={onRetry}>Detect again</button></div>
     <div className="defect-photo"><img src={url} alt={outlines?'Original uploaded road with API defect outlines':'Original uploaded road without outlines'}/>
@@ -20,7 +21,7 @@ export function DefectReview({url,detection,busy,error,excluded=[],onToggle,onRe
     {error&&<p className="field-error" role="alert">{error} No substitute demo defects have been added.</p>}
     {detection&&!busy&&<><p className="fine-print">{detection.defects.length?'Untick false positives to exclude them from both preview and lab.':'No candidates passed the visual filters. This does not prove the road is smooth.'} Simulation depth is a documented visual prior, not a measurement.</p>
       <div className="defect-candidate-list">{detection.defects.map(d=><div key={d.id} className="defect-candidate">
-        <label><input type="checkbox" aria-label={'Use '+d.id+' in simulation'} checked={!excluded.includes(d.id)} onChange={()=>onToggle?.(d.id)} disabled={!onToggle}/><span><strong>{d.id} · {d.kind} candidate</strong><small>{d.severity_label} visual severity · {Math.round(d.confidence*100)}% evidence (uncalibrated)</small></span></label>
+        <label><input type="checkbox" aria-label={'Use '+d.id+' in simulation'} checked={!excluded.includes(d.id)} onChange={()=>onToggle?.(d.id)} disabled={!onToggle}/><span><strong>{d.id} · {d.detection_code ? d.detection_code+' '+d.detection_label : d.kind+' candidate'}</strong><small>{d.severity_label} visual severity · {Math.round(d.confidence*100)}% evidence (uncalibrated)</small></span></label>
         <details><summary>Coordinates</summary><small>Original pixels: x {d.bbox.x}, y {d.bbox.y}, width {d.bbox.width}, height {d.bbox.height}. True depth and dimensions: unknown.</small></details>
       </div>)}</div>
       <details><summary>Detection limitations</summary><ul>{detection.warnings.map((note,i)=><li key={i}>{note}</li>)}</ul></details>

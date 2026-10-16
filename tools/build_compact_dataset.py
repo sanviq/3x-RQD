@@ -14,7 +14,7 @@ from PIL import Image
 from tools.prepare_rdd2022 import parse_annotation,group_records,assign_splits,CLASSES,file_sha256
 
 
-def build(source,output,gallery=None):
+def build(source,output,gallery=None,prior_manifest=None):
     source,output=Path(source).resolve(),Path(output).resolve()
     audit=json.loads((source/'collection-audit.json').read_text())
     if audit['status']!='complete':raise ValueError('Collection incomplete')
@@ -42,7 +42,50 @@ def build(source,output,gallery=None):
     conflicts={sha for sha,rs in by_pixels.items() if len({json.dumps(sorted(r['labels'])) for r in rs})>1}
     excluded=[r['source_image'] for r in records if r['pixel_sha256'] in conflicts]
     records=[r for r in records if r['pixel_sha256'] not in conflicts]
-    groups=group_records(records,frame_block=100);splits=assign_splits(records,groups,seed=42)
+    groups=group_records(records,frame_block=100)
+    # A previously evaluated image/group must never enter the fresh test set.
+    # Include old records while grouping so even unselected old frames protect neighbours.
+    prior=json.loads(Path(prior_manifest).read_text()) if prior_manifest else []
+    quarantined=[]
+    if prior:
+        for r in prior:
+            if r.get('thumbnail'):continue
+            original=Path(prior_manifest).parent/r['prepared_image']
+            with Image.open(original) as image:
+                r['thumbnail']=image.convert('RGB').resize((16,16),Image.Resampling.BILINEAR).tobytes().hex()
+        combined=records+prior
+        protected_groups=group_records(combined,frame_block=100)
+        locked={};groups=[]
+        for group in protected_groups:
+            current=[i for i in group if i<len(records)]
+            if not current:continue
+            old=[combined[i]['split'] for i in group if i>=len(records)]
+            # Old train data and its neighbours stay train. Old exposed holdouts
+            # and any connected groups stay validation and never enter training.
+            if old:
+                for i in current:locked[i]='val' if any(s!='train' for s in old) else 'train'
+            groups.append(current)
+        fresh_groups=[g for g in groups if g[0] not in locked]
+        fresh_indices=[i for g in fresh_groups for i in g]
+        remap={v:i for i,v in enumerate(fresh_indices)}
+        fresh=assign_splits([records[i] for i in fresh_indices],[[remap[i] for i in g] for g in fresh_groups],seed=42)
+        splits={**locked,**{i:fresh[remap[i]] for i in fresh_indices}}
+        # A bridge connecting previously trained images to old holdouts cannot
+        # supply clean validation; quarantine it instead of leaking either way.
+        quarantine=set()
+        for group in protected_groups:
+            old={combined[i]['split'] for i in group if i>=len(records)}
+            if 'train' in old and any(s!='train' for s in old):
+                quarantine.update(i for i in group if i<len(records))
+        if quarantine:
+            quarantined=[records[i]['source_image'] for i in sorted(quarantine)]
+            kept=[i for i in range(len(records)) if i not in quarantine]
+            remap={i:j for j,i in enumerate(kept)}
+            records=[records[i] for i in kept]
+            splits={remap[i]:s for i,s in splits.items() if i in remap}
+            groups=[[remap[i] for i in g if i in remap] for g in groups]
+            groups=[g for g in groups if g]
+    else:splits=assign_splits(records,groups,seed=42)
     for g,items in enumerate(groups):
         for i in items:records[i]['group']=g
     output.mkdir(parents=True)
@@ -89,6 +132,10 @@ def build(source,output,gallery=None):
                            'Filename blocks, exact pixels and close thumbnails group identifiable related scenes, not proven route-disjointness.',
                            'No official unlabelled test images are used. No universal accuracy claim.'],
             'collection_audit_sha256':file_sha256(source/'collection-audit.json')}
+    if prior:
+        result['prior_manifest_sha256']=file_sha256(prior_manifest)
+        result['prior_training_holdout_bridge_quarantine']=quarantined
+        result['holdout_policy']='Old training groups remain training; previously exposed validation/test groups become validation. Final test contains only newly collected groups without identified connections to any old image.'
     (output/'manifest.json').write_text(json.dumps(records,indent=2)+'\n')
     (output/'audit.json').write_text(json.dumps(result,indent=2)+'\n')
     (output/'data.yaml').write_text('path: '+json.dumps(str(output))+'\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n  0: D00\n  1: D10\n  2: D20\n  3: D40\n')
@@ -102,4 +149,5 @@ def build(source,output,gallery=None):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--gallery',type=Path)
-    a=p.parse_args();build(a.source,a.output,a.gallery)
+    p.add_argument('--prior-manifest',type=Path)
+    a=p.parse_args();build(a.source,a.output,a.gallery,a.prior_manifest)

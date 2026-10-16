@@ -8,7 +8,8 @@ from starlette.concurrency import run_in_threadpool
 
 from app.features import MAX_BYTES, FEATURE_VERSION, decode_image, extract_features
 from app.scoring import load_model, score
-from app.defects import DETECTOR_VERSION, detect_defects, parse_quad
+from app.defects import DETECTOR_VERSION, parse_quad
+from app.integrated_detector import detect_defects
 
 
 @asynccontextmanager
@@ -73,6 +74,8 @@ async def analyze_road(
 async def detect_uploaded_defects(
     image: UploadFile = File(...),
     road_quad: str | None = Form(None),
+    confidence: float | None = Form(None, ge=0, le=1),
+    resolution: int | None = Form(None, ge=320, le=1280),
 ):
     """Fast candidate detection; no score or metric depth is inferred."""
     try:
@@ -83,7 +86,7 @@ async def detect_uploaded_defects(
         raise HTTPException(413, "Image exceeds the 12 MiB upload limit.")
     try:
         quad = parse_quad(road_quad)
-        return await run_in_threadpool(lambda: detect_defects(decode_image(data), quad))
+        return await run_in_threadpool(lambda: detect_defects(decode_image(data), quad, confidence, resolution))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -96,6 +99,7 @@ app.include_router(router, prefix="/api")
 app.include_router(router, include_in_schema=False)
 app.add_api_route("/api/health", health, methods=["GET"])
 app.add_api_route("/api/analyze", analyze_road, methods=["POST"])
+app.add_api_route("/api/detect-defects", detect_uploaded_defects, methods=["POST"])
 _frontend = Path(__file__).resolve().parents[1] / "frontend" / "dist"
 if _frontend.exists():
     app.mount("/", StaticFiles(directory=str(_frontend), html=True), name="road-health")

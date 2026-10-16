@@ -5,7 +5,7 @@ const point=(p:unknown)=>isRecord(p)&&finiteNumber(p.x)&&finiteNumber(p.y)&&p.x>
 const polygon=(p:unknown)=>Array.isArray(p)&&p.length>=3&&p.length<=1000&&p.every(point);
 const box=(b:unknown)=>isRecord(b)&&['x','y','width','height'].every(k=>finiteNumber(b[k])&&(b[k] as number)>=0);
 export function isDefectDetection(v:unknown):v is DefectDetection {
-  if(!isRecord(v)||typeof v.version!=='string'||v.method!=='opencv_multiscale_contours'||v.coordinate_system!=='normalized_exif_oriented_original'||v.confidence_calibrated!==false||v.requires_review!==true)return false;
+  if(!isRecord(v)||typeof v.version!=='string'||!['opencv_multiscale_contours','yolo_rdd_detection'].includes(String(v.method))||v.coordinate_system!=='normalized_exif_oriented_original'||v.confidence_calibrated!==false||v.requires_review!==true)return false;
   if(!isRecord(v.image)||!finiteNumber(v.image.width)||!finiteNumber(v.image.height)||v.image.width<=0||v.image.height<=0)return false;
   if(!Array.isArray(v.road_quad)||v.road_quad.length!==4||!v.road_quad.every(point))return false;
   if(!Array.isArray(v.warnings)||!v.warnings.every(x=>typeof x==='string')||!Array.isArray(v.defects)||v.defects.length>80)return false;
@@ -16,8 +16,10 @@ export function isDefectDetection(v:unknown):v is DefectDetection {
     return ['Pothole','Crack','Depression','Uneven surface'].includes(String(d.kind))&&
       finiteNumber(d.confidence)&&d.confidence>=0&&d.confidence<=1&&finiteNumber(d.severity)&&d.severity>=0&&d.severity<=1&&
       ['Low','Moderate','High'].includes(String(d.severity_label))&&polygon(d.polygon)&&polygon(d.road_polygon)&&box(d.bbox)&&box(d.bbox_normalized)&&
-      finiteNumber(d.area_fraction)&&d.area_fraction>=0&&d.area_fraction<=1&&d.provenance==='opencv_candidate'&&d.depth_mm===null&&d.physical_dimensions===null&&
-      isRecord(evidence)&&['local_contrast','boundary_strength','solidity'].every(k=>finiteNumber(evidence[k]));
+      finiteNumber(d.area_fraction)&&d.area_fraction>=0&&d.area_fraction<=1&&d.depth_mm===null&&d.physical_dimensions===null&&
+      isRecord(evidence)&&(v.method==='opencv_multiscale_contours'
+        ? d.provenance==='opencv_candidate'&&['local_contrast','boundary_strength','solidity'].every(k=>finiteNumber(evidence[k]))
+        : d.provenance==='yolo_prediction'&&['D00','D10','D20','D40'].includes(String(d.detection_code))&&d.kind===(d.detection_code==='D40'?'Pothole':'Crack')&&typeof d.detection_label==='string'&&d.geometry_source==='bounding_box_schematic');
   });
 }
 export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal):Promise<DefectDetection> {

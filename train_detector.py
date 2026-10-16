@@ -61,8 +61,13 @@ def main():
     p.add_argument('--seed',type=int,default=42)
     p.add_argument('--device',default='mps')
     p.add_argument('--workers',type=int,default=0)
+    p.add_argument('--mosaic',type=float,default=1.)
+    p.add_argument('--scale',type=float,default=.5)
+    p.add_argument('--degrees',type=float,default=0.)
+    p.add_argument('--patience',type=int,default=100)
     a=p.parse_args()
     if a.epochs<1 or a.imgsz<64 or a.batch<1 or a.lr<=0 or a.workers<0:p.error('Invalid training settings')
+    if not 0<=a.mosaic<=1 or not 0<=a.scale<=1 or not 0<=a.degrees<=15 or a.patience<1:p.error('Invalid augmentation or patience settings')
     if bool(a.base)==bool(a.resume):p.error('Choose exactly one of --base or --resume')
     checkpoint=(a.resume or a.base).resolve()
     if not checkpoint.is_file():p.error('Checkpoint must already exist locally')
@@ -89,7 +94,7 @@ def main():
         model.train(data=str(path),epochs=a.epochs,imgsz=a.imgsz,batch=a.batch,lr0=a.lr,optimizer='AdamW',
                     seed=a.seed,deterministic=True,device=a.device,workers=a.workers,
                     project=str(output.parent),name=output.name,exist_ok=True,cache=False,
-                    save=True,save_period=10,plots=True)
+                    save=True,save_period=10,plots=True,mosaic=a.mosaic,scale=a.scale,degrees=a.degrees,patience=a.patience)
     best=output/'weights/best.pt'
     print(json.dumps({'best':str(best),'best_sha256':file_sha256(best) if best.exists() else None,
                       'notice':'Evaluate validation first. Freeze the checkpoint before held-out test evaluation. Do not configure the backend until reviewed.'},indent=2))

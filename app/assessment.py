@@ -212,13 +212,13 @@ class OptimizeRequest(SafeModel):
 
 
 def withhold_insufficient_model_score(result):
-    """Apply an evidence gate to model observations, never to repair scenarios."""
-    if result['defect_count'] == 0 or (result['average_confidence'] or 0) < .6:
-        result['candidate_score'] = result['score']
-        result['score'] = None
-        result['band'] = 'Unassessable'
-        result['evidence_status'] = 'insufficient'
-        result['explanation'] = 'Insufficient model evidence; repeat capture and review. No detected damage does not establish a healthy road. ' + result['explanation']
+    """Detection validation does not validate the engineering condition formula."""
+    insufficient=result['defect_count'] == 0 or (result['average_confidence'] or 0) < .6
+    result['candidate_score'] = result['score']
+    result['score'] = None
+    result['band'] = 'Unassessable'
+    result['evidence_status'] = 'insufficient' if insufficient else 'detections_available'
+    result['explanation'] = ('Insufficient model evidence; repeat capture and review. No detected damage does not establish a healthy road. ' if insufficient else 'Model detections require review. The road-health scoring formula is unvalidated, so its candidate index is not a condition grade. ') + result['explanation']
     return result
 
 
@@ -232,7 +232,7 @@ def optimize(req: OptimizeRequest):
         args['config'] = s.assessment.config
         before = assess(**args)
         if s.provenance == 'model' and withhold_insufficient_model_score(before)['score'] is None:
-            excluded.append({'id': s.id, 'reason': 'Insufficient model evidence; repeat capture before estimating repair benefit.'})
+            excluded.append({'id': s.id, 'reason': 'Model observations do not validate road-health scores or repair benefits. Review and supply explicit scenario assumptions before estimating benefit.'})
             continue
         args['repaired'] = [d.id for d in s.assessment.defects]
         after = assess(**args)
