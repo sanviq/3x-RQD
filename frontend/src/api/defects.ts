@@ -1,3 +1,4 @@
+import {isRoadQualityScore} from './qualityScore';
 import type { DefectDetection } from '../types/api';
 import type { RoadQuad } from '../simulation/projection';
 import { request, ApiError, isRecord, finiteNumber } from './client';
@@ -9,6 +10,7 @@ export function isDefectDetection(v:unknown):v is DefectDetection {
   if(!isRecord(v.image)||!finiteNumber(v.image.width)||!finiteNumber(v.image.height)||v.image.width<=0||v.image.height<=0)return false;
   if(!Array.isArray(v.road_quad)||v.road_quad.length!==4||!v.road_quad.every(point))return false;
   if(!Array.isArray(v.warnings)||!v.warnings.every(x=>typeof x==='string')||!Array.isArray(v.defects)||v.defects.length>80)return false;
+  if(v.road_quality_score!=null&&(!isRoadQualityScore(v.road_quality_score)||v.road_quality_score.snapshot_id!==v.score_token||v.road_quality_score.image.width!==v.image.width||v.road_quality_score.image.height!==v.image.height))return false;
   const ids=new Set<string>();
   return v.defects.every(d=>{
     if(!isRecord(d)||typeof d.id!=='string'||ids.has(d.id))return false;ids.add(d.id);

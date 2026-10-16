@@ -1,3 +1,4 @@
+import type {RoadQualityScore} from '../api/qualityScore';
 export const featureNames = [
   'chip_count_per_megapixel', 'chip_coverage_fraction', 'chip_diameter_mean_px',
   'chip_diameter_cv', 'chip_circularity_mean', 'chip_spacing_mean_px',
@@ -51,6 +52,7 @@ export interface RoadDefect {
   evidence:{local_contrast?:number;boundary_strength?:number;solidity?:number;detection_code?:string;detection_label?:string};
 }
 export interface DefectDetection {
+  road_quality_score?:RoadQualityScore|null;score_token?:string;score_expires_seconds?:number;score_error?:string;
   version:string;method:'opencv_multiscale_contours'|'yolo_rdd_detection';coordinate_system:'normalized_exif_oriented_original';
   road_quad:[DefectPoint,DefectPoint,DefectPoint,DefectPoint];image:{width:number;height:number};
   defects:RoadDefect[];warnings:string[];confidence_calibrated:false;requires_review:true;

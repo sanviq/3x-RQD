@@ -206,3 +206,7 @@ Uploaded captures now use the real photo renderer in Scenario lab → Repair & d
 ## Native weather comparison
 
 Uploaded captures now use `/weather-compare`; see [WEATHER_LAB.md](WEATHER_LAB.md) for native-resolution evidence, model availability, original-file metadata, annotation JSON and verification commands. With FastAPI on port 8000 and the current Vite preview on port 5174, open http://127.0.0.1:5174/ and select Scenario lab → Weather lab after uploading. No model weights are downloaded or activated automatically.
+
+## Provisional Road Quality Score
+
+An uploaded image now automatically receives a backend defect-area score (0–100), with a prominent Provisional label, rating band, counts, severity and explained deductions. False-positive exclusions recalculate against the same detection snapshot. See [ROAD_QUALITY_SCORE.md](ROAD_QUALITY_SCORE.md) for the formula, configuration, expert-rating validation tooling and limitations. Confidence is not road quality, and no expert score calibration is available in this checkout.

@@ -11,6 +11,7 @@ from app.scoring import load_model, score
 from app.defects import DETECTOR_VERSION, parse_quad
 from app.integrated_detector import detect_defects
 from app.calibration import calibration_metadata
+from app.road_quality_score import attach_score, router as quality_score_router
 
 
 @asynccontextmanager
@@ -28,13 +29,17 @@ def health():
             "feature_version": FEATURE_VERSION, "defect_version": DETECTOR_VERSION}
 
 
+def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None):
+    return attach_score(detect_defects(decoded,road_quad,confidence,resolution),decoded,data)
+
+
 def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None):
     if capture_type != "surface_crop":
         mm_per_pixel = None
     decoded = decode_image(data)
     result, overlay = extract_features(decoded, mm_per_pixel, road_quad)
     result['calibration']=calibration_metadata(result['physical_measurements'],mm_per_pixel,scale_uncertainty_percent)
-    result["defect_detection"] = detect_defects(decoded, road_quad)
+    result["defect_detection"] = scored_detection(decoded, data, road_quad)
     result["assessment"] = score(result["features"], getattr(app.state, "model", None), capture_type)
     result["capture_type"] = capture_type
     result["warnings"].extend(result["assessment"]["reasons"])
@@ -82,7 +87,7 @@ async def detect_uploaded_defects(
     confidence: float | None = Form(None, ge=0, le=1),
     resolution: int | None = Form(None, ge=320, le=1280),
 ):
-    """Fast candidate detection; no score or metric depth is inferred."""
+    """Detect actual candidates and attach an explicitly provisional defect-area score."""
     try:
         data = await image.read(MAX_BYTES + 1)
     finally:
@@ -91,10 +96,13 @@ async def detect_uploaded_defects(
         raise HTTPException(413, "Image exceeds the 12 MiB upload limit.")
     try:
         quad = parse_quad(road_quad)
-        return await run_in_threadpool(lambda: detect_defects(decode_image(data), quad, confidence, resolution))
+        return await run_in_threadpool(lambda: scored_detection(decode_image(data), data, quad, confidence, resolution))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
+
+app.include_router(quality_score_router, prefix="/api")
+app.include_router(quality_score_router, include_in_schema=False)
 
 from app.weather_compare import router as weather_router
 app.include_router(weather_router, prefix="/api")

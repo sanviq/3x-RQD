@@ -6,9 +6,9 @@ import {join,dirname} from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const scratch=join(root,'.verification');
 await mkdir(scratch,{recursive:true});
-for(const name of ['types/api','api/client','api/defects','api/roadQuality']){
+for(const name of ['types/api','api/client','api/qualityScore','api/defects','api/roadQuality']){
 let code=stripTypeScriptTypes(await readFile(join(root,'src',name+'.ts'),'utf8'),{mode:'transform'});
-code=code.replaceAll("'../types/api'","'../types/api.mjs'").replaceAll("'./client'","'./client.mjs'").replaceAll("'./defects'","'./defects.mjs'").replace('import.meta.env.VITE_API_BASE_URL',"({VITE_API_BASE_URL:'/api'}).VITE_API_BASE_URL");
+code=code.replaceAll("'../types/api'","'../types/api.mjs'").replaceAll("'./client'","'./client.mjs'").replaceAll("'./defects'","'./defects.mjs'").replaceAll("'./qualityScore'","'./qualityScore.mjs'").replace('import.meta.env.VITE_API_BASE_URL',"({VITE_API_BASE_URL:'/api'}).VITE_API_BASE_URL");
 const dest=join(scratch,name+'.mjs');await mkdir(dirname(dest),{recursive:true});await writeFile(dest,code);
 }
 const {analyzeRoad,getHealth,isAnalysisResponse}=await import(pathToFileURL(join(scratch,'api/roadQuality.mjs')).href);

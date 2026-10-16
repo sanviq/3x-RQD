@@ -1,3 +1,4 @@
+import {RoadQualityCard} from './RoadQualityCard';
 import {NativeWeatherLab} from './NativeWeatherLab';
 import {defaultPhotoSettings} from '../api/repairPhotos';
 import type {PhotoAssumptions} from '../api/repairPhotos';
@@ -221,6 +222,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   };
   return <div className="page-enter simulation-workspace">
     <div className="page-heading"><div><p className="eyebrow">INTERACTIVE ROAD SIMULATIONS</p><h1>Scenario lab<span className="heading-dot">.</span></h1><p>{source?source.file.name:'Synthetic sample road'} · aligned road area with explicit simulation assumptions.</p></div><div className="action-row"><label className="button secondary file-button"><Icon name="upload" size={16}/>Upload road image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void analysis.select(file)}}/></label><button className="button secondary" onClick={exportScenario}><Icon name="download" size={16}/>Export scenario</button></div></div>
+    {source&&<RoadQualityCard score={analysis.qualityScore} busy={analysis.qualityScoreBusy} error={analysis.detectionError||analysis.qualityScoreError} onRefresh={analysis.retryDetection}/>}
     <Note>{source?'The Wheel and Digital twin views use your rectified road texture and reviewed API contours. Align the outline below and review assumed depth. Scene mode preserves the original capture and optional video replay.':'This is a synthetic sample. Upload a road image to use your own road texture.'} A single photo does not establish road depth, scale, friction, or safe driving speed. Simulation geometry and vehicle response are assumptions; API surface scores are shown separately.</Note>
     {videoError&&<p className="field-error" role="status">{videoError}</p>}
     {(imageError||analysis.errors.image)&&<p className="field-error" role="alert">{imageError||analysis.errors.image}</p>}

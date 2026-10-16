@@ -1,3 +1,5 @@
+import {rescoreRoad} from '../api/qualityScore';
+import type {RoadQualityScore} from '../api/qualityScore';
 import { detectRoadDefects } from '../api/defects';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { analyzeRoad } from '../api/roadQuality';
@@ -13,22 +15,49 @@ export function useAnalysis() {
   const currentVideo = useRef<{file:File;url:string;frameTime:number}|null>(null);
 
   const [excludedDefects,setExcludedDefects]=useState<string[]>([]);
-  const [detection,setDetection]=useState<DefectDetection|null>(null);
+  const [detectionResult,setDetection]=useState<DefectDetection|null>(null);
+  const [detectionSource,setDetectionSource]=useState<{file:File;quad:string;revision:number}|null>(null);
   const [detectionBusy,setDetectionBusy]=useState(false);
   const [detectionError,setDetectionError]=useState('');
   const [detectionRevision,setDetectionRevision]=useState(0);
+  const quadKey=JSON.stringify(roadQuad);
+  const detection=detectionSource?.file===selected?.file&&detectionSource?.quad===quadKey&&detectionSource?.revision===detectionRevision?detectionResult:null;
   useEffect(()=>{
-    setDetection(null);setDetectionError('');setExcludedDefects([]);
+    setDetection(null);setDetectionSource(null);setDetectionError('');setExcludedDefects([]);
     if(!selected){setDetectionBusy(false);return}
     const abort=new AbortController();let cancelled=false;
     setDetectionBusy(true);
     const timer=window.setTimeout(()=>{
-      detectRoadDefects(selected.file,roadQuad,abort.signal).then(value=>{if(!cancelled)setDetection(value)})
+      detectRoadDefects(selected.file,roadQuad,abort.signal).then(value=>{if(!cancelled){setDetection(value);setDetectionSource({file:selected.file,quad:JSON.stringify(roadQuad),revision:detectionRevision})}})
         .catch(error=>{if(!cancelled&&!abort.signal.aborted)setDetectionError((error as Error).message)})
         .finally(()=>{if(!cancelled)setDetectionBusy(false)});
     },250);
     return()=>{cancelled=true;window.clearTimeout(timer);abort.abort()};
   },[selected,roadQuad,detectionRevision]);
+
+
+  const [scoreRecord,setScoreRecord]=useState<{key:string;value:RoadQualityScore}|null>(null);
+  const [scoreFailure,setScoreFailure]=useState<{key:string;message:string}|null>(null);
+  const [scoreRevision,setScoreRevision]=useState(0);
+  const excludedKey=[...excludedDefects].sort().join('\0');
+  const scoreKey=(detection?.score_token??'')+'|'+excludedKey;
+  const qualityScore=detection&&!detectionBusy&&scoreRecord?.key===scoreKey?scoreRecord.value:null;
+  const qualityScoreError=detection&&scoreFailure?.key===scoreKey?scoreFailure.message:'';
+  const qualityScoreBusy=!!selected&&!detectionError&&!qualityScoreError&&!qualityScore;
+  useEffect(()=>{
+    setScoreRecord(null);setScoreFailure(null);
+    if(!detection||detectionBusy)return;
+    const abort=new AbortController();let cancelled=false;
+    if(!detection.score_token||!detection.road_quality_score){setScoreFailure({key:scoreKey,message:detection.score_error||'The backend did not return a road score. Restart the updated API, then detect again.'});return}
+    if(!excludedDefects.length){setScoreRecord({key:scoreKey,value:detection.road_quality_score});return}
+    const timer=window.setTimeout(()=>{
+      rescoreRoad(detection.score_token!,excludedDefects,abort.signal).then(value=>{if(!cancelled)setScoreRecord({key:scoreKey,value})})
+        .catch(e=>{if(!cancelled&&!abort.signal.aborted)setScoreFailure({key:scoreKey,message:(e as Error).message})});
+    },180);
+    return()=>{cancelled=true;window.clearTimeout(timer);abort.abort()};
+    // The immutable detection snapshot and excludedKey fully identify this request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[detection,detectionBusy,scoreKey,scoreRevision]);
 
   const [captureType, setCaptureType] = useState<CaptureType>('road_scene');
   const [scale, setScale] = useState('');
@@ -124,6 +153,7 @@ export function useAnalysis() {
     currentImage.current = null; setSelected(null); setScale(''); setScaleUncertainty(''); setPitch(''); setOverlay(true);
   };
   return {
+    qualityScore,qualityScoreBusy,qualityScoreError,retryQualityScore:()=>setScoreRevision(n=>n+1),
     excludedDefects,toggleDefect:(id:string)=>setExcludedDefects(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]),
     detection,detectionBusy,detectionError,retryDetection:()=>setDetectionRevision(n=>n+1),
     selected, videoSource, roadQuad, setRoadQuad:updateRoadQuad, captureType, setCaptureType: (value:CaptureType) => { invalidate(); setCaptureType(value); setRoadQuad(value === 'surface_crop' ? fullQuad : sceneQuad); setScale(''); setScaleUncertainty(''); }, scale, pitch, overlay, result, busy, validating, errors, notice, select, submit, reset,

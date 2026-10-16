@@ -1,0 +1,35 @@
+import {test,expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+test('upload immediately receives the backend score; review and rerun stay synchronized',async({page})=>{
+ test.skip(process.env.ROAD_HEALTH_REAL_API!=='1','Requires updated real FastAPI');test.setTimeout(150000);
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await page.getByRole('button',{name:'New inspection',exact:true}).click();
+ const detection=page.waitForResponse(r=>r.url().endsWith('/api/detect-defects')&&r.status()===200);
+ const bytes=readFileSync(new URL('../../tests/fixtures/pothole-road.jpg',import.meta.url));
+ await page.locator('input[type=file]').first().setInputFiles({name:'provided-pothole.jpg',mimeType:'image/jpeg',buffer:bytes});
+ const initial=await (await detection).json();const score=initial.road_quality_score;expect(score.status).toBe('provisional');
+ const card=page.getByRole('region',{name:'Road Quality Score',exact:true});
+ await expect(card.getByTestId('road-quality-score')).toHaveText(score.score.toFixed(1),{timeout:45000});
+ await expect(card.getByText('Provisional',{exact:true})).toBeVisible();await expect(card.getByText(/Not model confidence/)).toBeVisible();
+ const target=[...score.defects].sort((a,b)=>b.deduction_points-a.deduction_points)[0].id;
+ const update=page.waitForResponse(r=>r.url().endsWith('/api/road-quality-score')&&r.status()===200);
+ await page.getByLabel('Use '+target+' in simulation',{exact:true}).uncheck();const updated=await (await update).json();
+ expect(updated.excluded_ids).toContain(target);expect(updated.score).toBeGreaterThanOrEqual(score.score);
+ await expect(card.getByTestId('road-quality-score')).toHaveText(updated.score.toFixed(1));
+ await card.getByText(/Why this score/).click();await expect(card.getByRole('table',{name:'Road score defect deductions'})).toBeVisible();
+ await page.getByRole('button',{name:'Simulate uploaded road',exact:true}).click();
+ const labCard=page.locator('.simulation-workspace').getByRole('region',{name:'Road Quality Score',exact:true});await expect(labCard.getByTestId('road-quality-score')).toHaveText(updated.score.toFixed(1));
+ const refreshed=page.waitForResponse(r=>r.url().endsWith('/api/detect-defects')&&r.status()===200);await page.getByRole('button',{name:'Detect again',exact:true}).click();const fresh=await (await refreshed).json();
+ expect(fresh.score_token).not.toBe(initial.score_token);await expect(labCard.getByTestId('road-quality-score')).toHaveText(fresh.road_quality_score.score.toFixed(1));expect(fresh.road_quality_score.excluded_ids).toEqual([]);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
+});
+test('failed score review hides the old value, preserves the upload and refreshes',async({page})=>{
+ test.skip(process.env.ROAD_HEALTH_REAL_API!=='1','Requires updated real FastAPI');test.setTimeout(120000);
+ await page.goto('/');await page.getByRole('button',{name:'New inspection',exact:true}).click();
+ const detection=page.waitForResponse(r=>r.url().endsWith('/api/detect-defects')&&r.status()===200);
+ await page.locator('input[type=file]').first().setInputFiles({name:'road.jpg',mimeType:'image/jpeg',buffer:readFileSync(new URL('../../tests/fixtures/pothole-road.jpg',import.meta.url))});
+ const data=await (await detection).json();const card=page.getByRole('region',{name:'Road Quality Score',exact:true});await expect(card.getByTestId('road-quality-score')).toBeVisible();
+ await page.route('**/api/road-quality-score',r=>r.fulfill({status:410,json:{detail:'Score evidence expired. Detect again.'}}));
+ await page.getByLabel('Use '+data.defects[0].id+' in simulation',{exact:true}).uncheck();await expect(card.getByRole('alert')).toContainText('expired');await expect(card.getByTestId('road-quality-score')).toHaveCount(0);
+ await expect(page.getByAltText('Original uploaded road with API defect outlines')).toBeVisible();await page.unroute('**/api/road-quality-score');await card.getByRole('button',{name:'Refresh detections & score'}).click();await expect(card.getByTestId('road-quality-score')).toBeVisible({timeout:45000});
+});
