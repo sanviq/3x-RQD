@@ -12,7 +12,7 @@ On validation, 205 of 225 annotation rectangles smaller than 1% of the image wer
 
 - Select 750 genuine labelled pairs per capture subset: China_Drone, China_MotorBike, Czech, India, Japan, Norway, United_States. Target 5,250 images; maximum original-pair bytes 1,800 MiB. Actual size and exclusions are recorded in the collection audit, not guessed.
 - Read cached official HTTP ranges and existing selected originals before fetching new ranges. Check exact response ranges, ZIP CRCs, JPEG decode, image/XML dimensions, bounding boxes and SHA256. Preserve old data, caches and checkpoints.
-- Group the combined new and old inventories using pixel hashes, close dHash/color thumbnails and filename blocks. Previously trained groups stay training. Previously exposed validation/test groups become validation. Bridges joining both are quarantined. Only wholly new groups can supply the final test. Unknown route relationships remain a limitation.
+- Group the combined new and old inventories using pixel hashes, close dHash/color thumbnails and filename blocks. Previously trained groups stay training. Previously exposed validation/test groups become validation. Bridges joining both are quarantined. Prefer up to 200 images per view from previously untouched filename blocks where available. Reserve all wholly new groups for the final test; validation uses previously untrained holdouts. Some country views have no fresh blocks left under this grouping policy, so a fresh test cannot automatically represent all countries. Report its exact coverage. Unknown route relationships remain a limitation.
 - Fine-tune the existing four-class YOLOv8n checkpoint for up to 50 additional epochs, 768 px, batch 2, AdamW learning rate .0005, seed 42, MPS, workers 0. Use mosaic .5, scale .3, rotation 2 degrees, and patience 20. This is a warm start with a fresh optimizer, not an interrupted-run resume. Best checkpoint is selected on validation.
 - Input processing remains aspect-preserving letterbox, BGR→RGB, tensor arrangement and division by 255. The larger resolution preserves more small-defect detail. No automatic contrast equalization, sharpening or invented deblurring is applied. More preprocessing is not assumed to improve accuracy.
 - Select a threshold using validation only. Freeze checkpoint SHA, resolution and threshold before evaluating the new final test. Evaluate the old detector on exactly the same test at its original 640/.35 settings. The comparison measures complete pipelines, including the resolution change.
@@ -46,7 +46,8 @@ To reproduce collection:
 .venv-roadhealth/bin/python -m tools.collect_rdd_subset \
   --original /path/to/existing/official/archive-directory \
   --reuse /path/to/compact-v1 \
-  --output /path/to/new-selected --per-subset 750 --max-mib 1800
+  --output /path/to/new-selected --per-subset 750 --max-mib 1800 \
+  --prior-manifest /path/to/previous/prepared/manifest.json
 ```
 
 `--original` and `--reuse` are optional. Collecting remotely can fetch additional range-cache bytes beyond the final selected-original size. The original full 12 GB download is not resumed. To reproduce the expansion splits from the released subset, extract it and run:
@@ -54,7 +55,7 @@ To reproduce collection:
 ```sh
 .venv-roadhealth/bin/python -m tools.build_compact_dataset /path/to/extracted \
   --output /path/to/new-prepared \
-  --prior-manifest /path/to/extracted/prior-manifest.json
+  --prior-manifest /path/to/extracted/prior-manifest.json --fresh-test-only
 ```
 
 The released prior manifest includes duplicate-detection thumbnails. Local preparation can instead use the earlier unchanged prepared manifest/images. Never drop the prior-manifest option when reproducing the improvement experiment: it protects against contamination from the already trained/evaluated v1 subset.

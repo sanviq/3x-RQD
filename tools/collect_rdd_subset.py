@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path, PurePosixPath
 import random
+import re
 import struct
 import threading
 import time
@@ -98,7 +99,12 @@ def country_archive(source,info):
     return zipfile.ZipFile(Slice(source,offset,info.file_size))
 
 
-def collect(original,output,per_subset=250,seed=42,max_mib=650,reuse=None):
+def frame_key(country,path):
+    stem=Path(path).stem;match=re.match(r'^(.*?)(\d+)$',stem)
+    return (country,match[1],int(match[2])//100) if match else (country,stem)
+
+
+def collect(original,output,per_subset=250,seed=42,max_mib=650,reuse=None,prior_manifest=None):
     output=Path(output).resolve();output.mkdir(parents=True,exist_ok=True)
     source=RangeSource(original,output/'range-cache',Path(reuse)/'range-cache' if reuse else None)
     report={'status':'collecting','source_url':URL,'source_file_id':38030910,'seed':seed,'target_per_subset':per_subset,
@@ -108,6 +114,11 @@ def collect(original,output,per_subset=250,seed=42,max_mib=650,reuse=None):
             'selection':'Seeded class-coverage sampling of labelled training data, approximately 10% explicit empty annotations. Unsupported-class images excluded. Not representative prevalence.',
             'training_started':False}
     budget_lock=threading.Lock();reserved=0
+    prior=json.loads(Path(prior_manifest).read_text()) if prior_manifest else []
+    known_blocks={frame_key(r['country'],r['source_image']) for r in prior}
+    if prior:
+        report['prior_manifest_sha256']=file_sha256(prior_manifest)
+        report['fresh_group_selection']='Prefer up to 200 pairs per view from filename blocks absent from the previous manifest, where available. Final duplicate/group audit, not selection alone, establishes eligibility for the fresh test.'
     with zipfile.ZipFile(Slice(source)) as outer:infos=[i for i in outer.infolist() if i.filename.lower().endswith('.zip')]
     def one(info):
         nonlocal reserved
@@ -141,9 +152,22 @@ def collect(original,output,per_subset=250,seed=42,max_mib=650,reuse=None):
             rng=random.Random(seed+sum(map(ord,country)));rng.shuffle(candidates)
             selected=[];counts=Counter();negative_target=max(1,per_subset//10)
             positives=[c for c in candidates if c['classes']];negatives=[c for c in candidates if not c['classes']]
+            if prior:
+                fresh=[c for c in candidates if frame_key(country,c['image'].filename) not in known_blocks]
+                stats['candidate_pairs_in_new_filename_blocks']=len(fresh)
+                fresh_positive=[c for c in fresh if c['classes']]
+                fresh_negative=[c for c in fresh if not c['classes']]
+                target=min(200,per_subset//2)
+                selected=fresh_positive[:target-target//10]+fresh_negative[:target//10]
+                names={c['image'].filename for c in selected}
+                positives=[c for c in positives if c['image'].filename not in names]
+                negatives=[c for c in negatives if c['image'].filename not in names]
+                for c in selected:counts.update(c['classes'])
+                stats['preferred_new_block_pairs']=len(selected)
+            initial_negatives=sum(not c['classes'] for c in selected)
             # Prefer the least represented available class without fabricating missing classes.
             available={c for item in positives for c in item['classes']}
-            while positives and len(selected)<per_subset-negative_target:
+            while positives and len(selected)<per_subset-negative_target+initial_negatives:
                 target=min(available,key=lambda c:(counts[c],c))
                 index=next((i for i,c in enumerate(positives) if target in c['classes']),None)
                 if index is None:
@@ -197,6 +221,7 @@ if __name__=='__main__':
     p.add_argument('--original',type=Path);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--per-subset',type=int,default=250);p.add_argument('--seed',type=int,default=42);p.add_argument('--max-mib',type=int,default=650)
     p.add_argument('--reuse',type=Path,help='Read unchanged existing selected pairs and cached ranges before using the network')
+    p.add_argument('--prior-manifest',type=Path,help='Prefer new filename blocks for a protected fresh holdout')
     a=p.parse_args()
     if not 20<=a.per_subset<=1000 or not 20<=a.max_mib<=2200:p.error('Use a bounded subset: 20..1000 images/view and 20..2200 MiB')
-    collect(a.original,a.output,a.per_subset,a.seed,a.max_mib,a.reuse)
+    collect(a.original,a.output,a.per_subset,a.seed,a.max_mib,a.reuse,a.prior_manifest)

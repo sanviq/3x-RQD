@@ -14,7 +14,7 @@ from PIL import Image
 from tools.prepare_rdd2022 import parse_annotation,group_records,assign_splits,CLASSES,file_sha256
 
 
-def build(source,output,gallery=None,prior_manifest=None):
+def build(source,output,gallery=None,prior_manifest=None,fresh_test_only=False):
     source,output=Path(source).resolve(),Path(output).resolve()
     audit=json.loads((source/'collection-audit.json').read_text())
     if audit['status']!='complete':raise ValueError('Collection incomplete')
@@ -68,7 +68,8 @@ def build(source,output,gallery=None,prior_manifest=None):
         fresh_groups=[g for g in groups if g[0] not in locked]
         fresh_indices=[i for g in fresh_groups for i in g]
         remap={v:i for i,v in enumerate(fresh_indices)}
-        fresh=assign_splits([records[i] for i in fresh_indices],[[remap[i] for i in g] for g in fresh_groups],seed=42)
+        fresh=({i:'test' for i in range(len(fresh_indices))} if fresh_test_only else
+               assign_splits([records[i] for i in fresh_indices],[[remap[i] for i in g] for g in fresh_groups],seed=42))
         splits={**locked,**{i:fresh[remap[i]] for i in fresh_indices}}
         # A bridge connecting previously trained images to old holdouts cannot
         # supply clean validation; quarantine it instead of leaking either way.
@@ -135,6 +136,8 @@ def build(source,output,gallery=None,prior_manifest=None):
     if prior:
         result['prior_manifest_sha256']=file_sha256(prior_manifest)
         result['prior_training_holdout_bridge_quarantine']=quarantined
+        result['fresh_groups_reserved_for_final_test']=fresh_test_only
+        result['missing_countries_by_split']={s:sorted(set(r['country'] for r in records)-set(v['countries'])) for s,v in summary.items()}
         result['holdout_policy']='Old training groups remain training; previously exposed validation/test groups become validation. Final test contains only newly collected groups without identified connections to any old image.'
     (output/'manifest.json').write_text(json.dumps(records,indent=2)+'\n')
     (output/'audit.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -150,4 +153,7 @@ def build(source,output,gallery=None,prior_manifest=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--gallery',type=Path)
     p.add_argument('--prior-manifest',type=Path)
-    a=p.parse_args();build(a.source,a.output,a.gallery,a.prior_manifest)
+    p.add_argument('--fresh-test-only',action='store_true',help='Reserve every wholly new group for the final test; validation uses previous untrained holdout groups')
+    a=p.parse_args()
+    if a.fresh_test_only and not a.prior_manifest:p.error('--fresh-test-only requires --prior-manifest')
+    build(a.source,a.output,a.gallery,a.prior_manifest,a.fresh_test_only)

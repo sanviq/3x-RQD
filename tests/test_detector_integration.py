@@ -110,12 +110,13 @@ def test_expansion_keeps_exposed_images_out_of_fresh_test(tmp_path):
     for split in ('train','val','test'):
         prior.extend([r for r in all_prior if r['split']==split][:2])
     (original/'subset-manifest.json').write_text(json.dumps(prior))
-    expanded=tmp_path/'expanded';build(source,expanded,prior_manifest=original/'subset-manifest.json')
+    expanded=tmp_path/'expanded';build(source,expanded,prior_manifest=original/'subset-manifest.json',fresh_test_only=True)
     validated_dataset(expanded/'data.yaml')
     records=json.loads((expanded/'manifest.json').read_text());by_pixel={r['pixel_sha256']:r for r in records}
     for old in prior:
         assert by_pixel[old['pixel_sha256']]['split']==('train' if old['split']=='train' else 'val')
     assert not {r['pixel_sha256'] for r in records if r['split']=='test'} & {r['pixel_sha256'] for r in prior}
+    assert all(r['split']=='test' for r in records if r['pixel_sha256'] not in {old['pixel_sha256'] for old in prior})
 
 
 def test_saved_high_confidence_detections_are_not_health_grades(tmp_path,monkeypatch):

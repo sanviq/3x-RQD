@@ -108,7 +108,7 @@ def main():
         audit=json.loads(collection.read_text())
         if audit['status']!='complete' or audit['selected_images']<5000:raise ValueError('Expanded collection incomplete or too small; inspect audit')
         if shutil.disk_usage(root).free<8*1024**3:raise ValueError('Less than 8 GiB free before preparation')
-        execute('preparing',['-m','tools.build_compact_dataset',str(root/'selected'),'--output',str(root/'prepared'),'--prior-manifest',str(a.prior_manifest)])
+        execute('preparing',['-m','tools.build_compact_dataset',str(root/'selected'),'--output',str(root/'prepared'),'--prior-manifest',str(a.prior_manifest),'--fresh-test-only'])
         data=root/'prepared/data.yaml';prepared_audit=json.loads((root/'prepared/audit.json').read_text())
         if any(prepared_audit['missing_classes_by_split'].values()):raise ValueError('A split lacks a target class')
         test=json.loads((root/'prepared/manifest.json').read_text())
