@@ -4,6 +4,43 @@ import json
 from collections import Counter
 from pathlib import Path
 from tools.evaluate_detector import diagnostic_matches
+from tools.prepare_rdd2022 import CLASSES
+
+
+def precision_profile(records, *, split, checkpoint_sha256):
+    """Validation-only precision choices, retaining missed detections and class support."""
+    if split != 'val':
+        raise ValueError('Threshold selection is allowed on validation only')
+    records=list(records)
+    # Matching is confidence ordered. Removing a low-confidence suffix cannot
+    # change earlier matches, so match once rather than 99 times per image.
+    events=[]; support=Counter()
+    for row in records:
+        support.update(g['class_id'] for g in row['ground_truth'])
+        match=diagnostic_matches(row['ground_truth'],row['predictions'],0)
+        for kind in ('tp','fp'):
+            events.extend((p['confidence'],p['class_id'],kind) for p in match[kind])
+    def metrics(counts, labels):
+        tp,fp=counts['tp'],counts['fp'];fn=labels-tp
+        p=tp/(tp+fp) if tp+fp else None
+        r=tp/labels if labels else None
+        return dict(tp=tp,fp=fp,fn=fn,precision=p,recall=r,
+                    f1=2*p*r/(p+r) if p is not None and r is not None and p+r else 0)
+    sweep=[]
+    for percent in range(1,100):
+        threshold=percent/100; counts=Counter(); classes={i:Counter() for i in range(len(CLASSES))}
+        for confidence,class_id,kind in events:
+            if confidence>=threshold:
+                counts[kind]+=1;classes[class_id][kind]+=1
+        sweep.append(dict(confidence=threshold,**metrics(counts,sum(support.values())),
+                          per_class={code:metrics(classes[i],support[i]) for i,code in enumerate(CLASSES)}))
+    eligible=[s for s in sweep if s['precision'] is not None and s['precision']>=.5
+              and s['recall'] is not None and s['recall']>=.3]
+    selected=max(eligible,key=lambda s:(s['precision'],s['recall'],-s['confidence'])) if eligible else None
+    return dict(split=split,checkpoint_sha256=checkpoint_sha256,threshold_sweep=sweep,
+                precision_priority_operating_point=selected,
+                selection_constraints=dict(minimum_precision=.5,minimum_recall=.3),
+                notice='Validation recommendation only; not automatically activated. Highest precision on a 0.01 grid subject to recall >= .30 and precision >= .50. Null means no eligible setting. Per-class misses remain visible. Filtering does not improve mAP or prove field accuracy; verify a frozen policy on held-out data before activation.')
 
 
 def analyze(folder):
@@ -11,7 +48,7 @@ def analyze(folder):
     if report['split']!='val':raise ValueError('Threshold selection is allowed on validation only')
     records=[json.loads(line) for line in (folder/'predictions.jsonl').read_text().splitlines()]
     sweep=[]
-    for threshold in [.05,.10,.15,.20,.25,.30,.35,.40,.45,.50,.60,.70,.80]:
+    for threshold in [i/100 for i in range(1,100)]:
         counts=Counter()
         for row in records:
             match=diagnostic_matches(row['ground_truth'],row['predictions'],threshold)

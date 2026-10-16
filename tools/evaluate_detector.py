@@ -108,6 +108,11 @@ def main():
         errors=summarize_errors((json.loads(line) for line in f),a.confidence)
     errors.update(split=a.split,checkpoint_sha256=checksum)
     (output/'error-summary.json').write_text(json.dumps(errors,indent=2))
+    if a.split=='val':
+        from tools.analyze_detector_errors import precision_profile
+        with (output/'predictions.jsonl').open() as f:
+            profile=precision_profile((json.loads(line) for line in f),split=a.split,checkpoint_sha256=checksum)
+        (output/'precision-profile.json').write_text(json.dumps(profile,indent=2))
     print(json.dumps(report,indent=2))
 
 
