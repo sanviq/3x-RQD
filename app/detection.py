@@ -27,8 +27,9 @@ RDD_CODES = {**{c.lower(): c for c in RDD_LABELS}, 'longitudinal_crack': 'D00',
 
 
 def model_status():
-    selection=selected_model(MODEL_PATH)
+    selection=selected_model(MODEL_PATH,allow_experimental=True)
     return {**{k:v for k,v in selection.items() if k!='path'},
+            'automatic_detection_configured':selected_model(MODEL_PATH)['configured'],
             'loaded': _model is not None, 'mode': 'model' if selection['configured'] else 'demo',
             'requires': 'Trusted road-specific YOLO detection/segmentation weights and requirements-model.txt. Generic COCO weights do not recognize road-defect classes.',
             'supported_classes': CLASSES}
@@ -118,7 +119,7 @@ def predict(image, mode='demo', confidence=.35, resolution=640, seed=1):
     global _model, _loaded_path
     if mode == 'demo':
         return [d for d in demo_defects(seed) if d.confidence>=confidence]
-    selection=selected_model(MODEL_PATH)
+    selection=selected_model(MODEL_PATH,allow_experimental=True)
     if not selection['configured']:
         raise ValueError('No trained road-defect model configured. Use Demo or set ROAD_HEALTH_MODEL and install requirements-model.txt.')
     with _lock:

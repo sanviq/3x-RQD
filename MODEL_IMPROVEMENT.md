@@ -91,6 +91,8 @@ The released prior manifest includes duplicate-detection thumbnails. Local prepa
 
 ## Phase 5 API integration
 
+The completed v2 checkpoint is now available as an explicit, SHA-bound [interactive experimental preview](docs/EXPERIMENTAL_DETECTOR.md). This allows real-photo inference in the advanced workspace while preserving the failed qualification result, withheld engineering scores and separate automatic-workflow gate. The preview is configured locally, not by committing weights or enabling the qualification registry.
+
 `app/integrated_detector.py` adapts real D00/D10/D20/D40 predictions into the teammate `DefectDetection` geometry contract, without removing OpenCV support. Both `/detect-defects` and `/api/detect-defects`, and `/analyze`'s `defect_detection`, use this adapter. The advanced `/api/inspect` image/video/camera workflow uses the same selected model. Additive method/provenance variants are accepted by the frontend and actual RDD class codes, confidence and original-image boxes are retained. Each bbox is mapped to a schematic road footprint for the existing simulator. It is explicitly **not a segmentation mask or depth measurement**.
 
 The default detector registry is `.local-road-health/detector.json` (ignored by Git). A successful run writes an atomic SHA-bound record. `ROAD_HEALTH_DETECTOR_REGISTRY` can select another trusted local registry. `ROAD_HEALTH_MODEL=/trusted/local/checkpoint.pt` remains an explicit experimental override for development, not a reliability-gate pass. Only load trusted weights; checkpoint deserialization can execute code. Supported registry status is visible at `/api/status`.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Note, PanelTitle } from './UI';
 import { Icon } from './Icon';
 import { InclinationTool } from './InclinationTool';
@@ -17,9 +17,11 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
   const image=sampleImage??uploadedImage;
   useEffect(()=>setSampleImage(null),[uploadedImage]);
   const [settings,setSettings]=useState<DetectionSettings>({mode:'model',confidence:.35,resolution:640});
+  const modeChosen=useRef(false);
   const [roll,setRoll]=useState('');
   const [inclination,setInclination]=useState<Record<string,unknown>|null>(null);
   const [status,setStatus]=useState<DetectorStatus|null>(null);
+  const [statusError,setStatusError]=useState('');
   const [source,setSource]=useState<'image'|'video'|'camera'>('image');
   const [videoFile,setVideoFile]=useState<File|null>(null);
   const [sampleEvery,setSampleEvery]=useState(10);
@@ -51,7 +53,11 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
     if(camera.current)camera.current.srcObject=null;
     setRunning(false);setBusy(false);inFlight.current=false;
   };
-  useEffect(()=>{const lifecycleRevision=revision;mounted.current=true;const c=new AbortController();void detectorStatus(c.signal).then(setStatus).catch(()=>{});return()=>{mounted.current=false;lifecycleRevision.current++;c.abort();request.current?.abort();if(interval.current)clearInterval(interval.current);media.current?.getTracks().forEach(t=>t.stop());if(session.current)void stopTracking(session.current).catch(()=>{})}},[]);
+  const refreshStatus=useCallback(async(signal?:AbortSignal)=>{
+    try{const next=await detectorStatus(signal);if(signal?.aborted||!mounted.current)return;setStatus(next);setStatusError('');if(next.model.configured&&!modeChosen.current)setSettings(previous=>({...previous,mode:'model',confidence:next.model.confidence??.35,resolution:next.model.imgsz??640}))}
+    catch(e){if(!signal?.aborted&&mounted.current)setStatusError((e as Error).message)}
+  },[]);
+  useEffect(()=>{const lifecycleRevision=revision;mounted.current=true;const c=new AbortController();void refreshStatus(c.signal);return()=>{mounted.current=false;lifecycleRevision.current++;c.abort();request.current?.abort();if(interval.current)clearInterval(interval.current);media.current?.getTracks().forEach(t=>t.stop());if(session.current)void stopTracking(session.current).catch(()=>{})}},[refreshStatus]);
   useEffect(()=>{stop();setData(null);setFrames([]);setError('');setBusy(false)},[image,scale,pitch,roll,settings,inclination]);
   const options:DetectionSettings={...settings,scale:sampleImage?'':scale,pitch:sampleImage?'':pitch,roll:sampleImage?'':roll,inclination:sampleImage?undefined:inclination||undefined};
   const cancel=()=>{stop();setNotice('Stopped. Server-side work already started may finish; late responses are ignored.')};
@@ -66,7 +72,7 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
       }else{
         if(settings.mode==='model'&&!image)throw new Error('Choose an image in Add a road capture above.');
         const result=await inspectDefects(detectionForm(options,image),c.signal);
-        if(!mounted.current||revision.current!==version)return;setFrames([]);setVideoReport(null);accept(result,options);setNotice('Inspection complete. Review image quality, provenance and limitations.');
+        if(!mounted.current||revision.current!==version)return;setFrames([]);setVideoReport(null);accept(result,options);setNotice(settings.mode==='model'?'Trained-model inference complete on the selected image. Review detections and image quality.':'Demo annotations generated. These are illustrations, not detections from the selected image.');
       }
     }catch(e){if(!c.signal.aborted&&mounted.current)setError((e as Error).message)}finally{if(mounted.current&&revision.current===version){setBusy(false);request.current=null}}
   };
@@ -98,14 +104,16 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
   return <section className="backend-workspace results-stack" aria-label="Connected road defect service">
     <DatasetGallery onSelect={setSampleImage}/>
     {sampleImage&&<Note>Real dataset preview selected: {sampleImage.name}. Existing capture calibration and IMU inputs are not applied to this unrelated image. Detection mode still controls whether results are illustrative fixtures or actual model predictions. <button className="text-button" onClick={()=>setSampleImage(null)}>Return to uploaded capture</button></Note>}
-    <section className="panel"><PanelTitle title="Road-defect analysis" eyebrow="CONNECTED BACKEND · ADDITIONAL WORKFLOW"><Badge tone={status?.model.configured?'good':'lavender'}>{status?.model.configured?'Road weights configured':'Optional road weights not configured'}</Badge></PanelTitle>
-      <p className="fine-print">Automatic road-region, chip and OpenCV defect analysis runs above without model weights. This additional workbench supports optional YOLO road-defect models, video tracking, sensor inputs, repair calculations and local GPS records.</p>
-      <Note>{settings.mode==='demo'?'Demo annotations are fixed illustrative fixtures, not detections from an uploaded capture. Confidence values are synthetic. Real inference requires trusted road-specific weights.':'This optional model mode requires trusted road-defect weights. Without them, use the automatic image analysis above. Severity is an unvalidated image estimate, and the legacy engineering grade remains withheld. A generic COCO detector is not suitable.'}</Note>
+    <section className="panel"><PanelTitle title="Road-defect analysis" eyebrow="CONNECTED BACKEND · ADDITIONAL WORKFLOW"><Badge tone={status?.model.configured?'fair':'lavender'}>{status?.model.configured?'Trained detector · experimental':'Trained detector unavailable'}</Badge></PanelTitle>
+      <p className="fine-print">Automatic road-region, chip and OpenCV defect analysis runs above without model weights. This additional workbench supports the trained YOLO preview, video tracking, sensor inputs, repair calculations and local GPS records.</p>
+      {statusError&&<p role="alert" className="field-error">Could not check the local detector: {statusError} <button className="text-button" onClick={()=>void refreshStatus()}>Retry detector connection</button></p>}
+      <Note>{settings.mode==='demo'?'Demo annotations are fixed illustrative fixtures, not detections from an uploaded capture. Confidence values are synthetic. Select the trained model to analyze your actual photo.':status?.model.notice??'Local model mode uses configured road-defect weights. Review predictions; severity and road scores are unvalidated estimates.'}</Note>
+      {settings.mode==='model'&&status&&!status.model.configured&&<Note tone="warning">No trained detector is available on this server. Configure a trusted checkpoint; automatic surface analysis above remains available. Illustrative demo controls are available only when explicitly enabled.</Note>}
       <div className="segmented source-tabs" role="group" aria-label="Defect analysis source">{(['image','video','camera'] as const).map(s=><button key={s} className={source===s?'active':''} aria-pressed={source===s} onClick={()=>chooseSource(s)}>{s==='image'?'Image':s==='video'?'Video upload':'Live tracked camera'}</button>)}</div>
       <fieldset disabled={busy||running} className="backend-controls">
-        <label className="field">Detection mode<select aria-label="Defect detection mode" value={settings.mode} onChange={e=>setSettings({...settings,mode:e.target.value as 'demo'|'model'})}>{import.meta.env.VITE_ENABLE_DEMOS==='true'&&<option value="demo">Demo · illustrative fixture annotations</option>}<option value="model">Local road-specific YOLO model</option></select></label>
+        <label className="field">Detection mode<select aria-label="Defect detection mode" value={settings.mode} onChange={e=>{modeChosen.current=true;setSettings({...settings,mode:e.target.value as 'demo'|'model'})}}>{import.meta.env.VITE_ENABLE_DEMOS==='true'&&<option value="demo">Demo · illustrative fixture annotations</option>}<option value="model">Trained YOLO · experimental inference</option></select></label>
         <label className="field">Confidence threshold · {percent(settings.confidence)}<input type="range" aria-label="Detection confidence threshold" min=".1" max=".95" step=".05" value={settings.confidence} onChange={e=>setSettings({...settings,confidence:Number(e.target.value)})}/></label>
-        <label className="field">Processing resolution<select aria-label="Detection processing resolution" value={settings.resolution} onChange={e=>setSettings({...settings,resolution:Number(e.target.value)})}>{[320,640,960,1280].map(v=><option value={v} key={v}>{v} px{v===320?' · edge starting point':''}</option>)}</select></label>
+        <label className="field">Processing resolution<select aria-label="Detection processing resolution" value={settings.resolution} onChange={e=>setSettings({...settings,resolution:Number(e.target.value)})}>{[320,640,768,960,1280].map(v=><option value={v} key={v}>{v} px{v===320?' · edge starting point':''}</option>)}</select></label>
         <label className="field">Measured IMU roll · optional degrees<input type="number" min="-90" max="90" step="any" value={roll} onChange={e=>setRoll(e.target.value)}/></label>
       </fieldset>
       <p className="fine-print">Uses the original-image scale and measured pitch entered above. Roll is included only with an IMU pitch reading. Inclination is a configurable policy factor, not evidence that an intentionally sloped road is poorly engineered.</p>
@@ -114,7 +122,7 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
       {source==='image'&&<p className="input-help">{image?'Selected capture: '+image.name:'No image selected. Demo can generate a synthetic road; model mode needs an upload above.'}</p>}
       {source==='video'&&<div className="backend-controls"><label className="field">Road video · up to 100 MiB<input type="file" accept="video/*" disabled={busy} onChange={e=>{setVideoFile(e.target.files?.[0]||null);setData(null);setFrames([])}}/></label><label className="field">Sample every N frames<input type="number" min="1" max="300" value={sampleEvery} disabled={busy} onChange={e=>setSampleEvery(Number(e.target.value))}/></label><label className="field">Maximum sampled frames<input type="number" min="1" max="48" value={maxFrames} disabled={busy} onChange={e=>setMaxFrames(Number(e.target.value))}/></label></div>}
       {source==='camera'&&<><video ref={camera} muted playsInline className="capture-video"/><Note>Start camera requests permission and begins periodic uploads to your local backend. Stop releases the camera and tracking session. No camera frames are saved automatically.</Note></>}
-      <div className="action-row">{source==='camera'?<button className="button primary" disabled={running||busy} onClick={()=>void start()}>Start tracked camera<Icon name="camera" size={16}/></button>:<button className="button primary" disabled={busy} onClick={()=>void run()}>{busy?'Processing locally…':'Run defect analysis'}<Icon name="scan" size={16}/></button>}{(busy||running)&&<button className="button secondary" onClick={cancel}>Stop analysis</button>}</div>
+      <div className="action-row">{source==='camera'?<button className="button primary" disabled={running||busy||(settings.mode==='model'&&!status?.model.configured)} onClick={()=>void start()}>Start tracked camera<Icon name="camera" size={16}/></button>:<button className="button primary" disabled={busy||(!status)||(settings.mode==='model'&&!status.model.configured)} onClick={()=>void run()}>{busy?'Processing locally…':!status?'Checking detector…':settings.mode==='model'?'Run trained detector':'Generate demo annotations'}<Icon name="scan" size={16}/></button>}{(busy||running)&&<button className="button secondary" onClick={cancel}>Stop analysis</button>}</div>
       {notice&&<p className="input-help" role="status">{notice}</p>}{error&&<p className="field-error" role="alert">{error}</p>}
     </section>
     {data&&<>

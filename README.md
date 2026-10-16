@@ -95,7 +95,7 @@ For separate terminals, proxy configuration, and troubleshooting, see [RUNNING.m
 
 1. **Explore the real road map.** Pan, zoom or search for a location. Roads without linked inspection evidence remain **Not inspected**; geometry alone never determines pavement quality.
 2. **Open Surface inspection.** Upload an image, choose a video reference frame, or capture a camera image. Review the original image, detected candidates, bounding boxes, and confidence. Align the road footprint before using the simulation.
-3. **Review detections.** Reject false positives. Without an accepted YOLO checkpoint, the default inspection workflow uses experimental OpenCV candidates; these are not validated model predictions. The additional detector workspace requires optional road-specific weights; illustrative controls are available only when VITE_ENABLE_DEMOS is explicitly enabled.
+3. **Review detections.** Reject false positives. Without an accepted YOLO checkpoint, the default inspection workflow uses experimental OpenCV candidates; these are not validated model predictions. The advanced detector workspace can run the completed checkpoint as a clearly labelled experimental preview. Use **Run trained detector** for your photo; **Generate demo annotations** creates fixtures. See [preview setup](docs/EXPERIMENTAL_DETECTOR.md). Illustrative controls are available only when `VITE_ENABLE_DEMOS=true` is explicitly enabled.
 4. **Link verified capture locations.** Select the mapped segment, confirm that the capture belongs there, and explicitly save the inspection. Existing GPS import and survey records remain supported. GPS is supplied by the user, not recovered from RDD2022 photos.
 5. **Compare repair scenarios.** In Scenario lab, drive the original road, select repairs, and drive the same route again. Compare simulated suspension response, remaining defects, repair costs, and synthetic weather changes.
 6. **Check Model evaluation.** Genuine detector reports are separated from illustrative charts. The local training status appears when a job is registered.
@@ -137,7 +137,7 @@ At confidence **0.35** and class-correct bounding-box IoU **≥ 0.50**:
 
 These results support an improvement on this internal test. They do **not** establish field accuracy, national road-quality rankings, or reliable road-health scores. The old pipeline used 640 px inference and the candidate used 768 px; the comparison is between complete pipelines.
 
-**Status: experimental; automatic activation disabled.** The model failed the recall requirement. **90% precision remains a project target**, with recall and per-class results reported alongside it. Increasing the confidence cutoff can hide most defects, so a high precision number alone is not success.
+**Status: experimental; automatic promotion blocked by the recall gate.** Explicit [interactive preview](docs/EXPERIMENTAL_DETECTOR.md) can run real-image inference without changing that decision. The model failed the recall requirement. **90% precision remains a project target**, with recall and per-class results reported alongside it. Increasing the confidence cutoff can hide most defects, so a high precision number alone is not success.
 
 <details>
 <summary><strong>See the measured results in the application</strong></summary>
@@ -216,6 +216,7 @@ On Windows, use `.\.venv\Scripts\python.exe -m pytest -q` for the backend comman
 
 - [Local setup and launch](RUNNING.md)
 - [Backend integration and API contracts](docs/IMPLEMENTATION.md)
+- [Real-image inference with the completed experimental model](docs/EXPERIMENTAL_DETECTOR.md)
 - [GPS inspection import and sharing](docs/GPS_INSPECTION_IMPORT.md)
 - [Defect detection and geometry](DETECTION.md)
 - [Network and image analysis](NETWORK_AND_ANALYSIS.md)

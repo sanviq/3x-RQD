@@ -107,8 +107,8 @@ async def inspect_upload(
     effect: Literal['none', 'low_light', 'brightness', 'shadow', 'glare', 'blur', 'perspective', 'rain'] = Form('none'),
     strength: float = Form(.5, ge=0, le=1),
 ):
-    if resolution not in (320, 640, 960, 1280):
-        raise HTTPException(422, 'Resolution must be 320, 640, 960 or 1280.')
+    if resolution not in (320, 640, 768, 960, 1280):
+        raise HTTPException(422, 'Resolution must be 320, 640, 768, 960 or 1280.')
     try:
         inclination = Inclination.model_validate_json(inclination_json)
         config = ScoreConfig.model_validate_json(config_json)
@@ -154,8 +154,8 @@ async def video_upload(
     sample_every: int = Form(10, ge=1, le=300), max_frames: int = Form(24, ge=1, le=48), config_json: str = Form('{}'),
     mm_per_pixel: float | None = Form(None, gt=0, le=1000), inclination_json: str = Form('{}'),
 ):
-    if resolution not in (320, 640, 960, 1280):
-        raise HTTPException(422, 'Resolution must be 320, 640, 960 or 1280.')
+    if resolution not in (320, 640, 768, 960, 1280):
+        raise HTTPException(422, 'Resolution must be 320, 640, 768, 960 or 1280.')
     try:
         config = ScoreConfig.model_validate_json(config_json)
     except ValueError as exc:
