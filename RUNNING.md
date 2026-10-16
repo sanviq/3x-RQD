@@ -165,3 +165,12 @@ traceable per-wheel mass/stiffness/damping values and a source reference. Re-run
 wheel inspection; this changes viewing speed without changing the 240 Hz physics.
 Saved uncertain detections can be retained for repeat-capture follow-up. They do not
 receive a supported health grade merely because they were saved.
+
+### Road mesh framing
+
+The connected inspection's road mesh fits its projected vertices to the available
+canvas, including calibrated close-ups. Drag to rotate, adjust the viewing angle
+or zoom, and use **Fit road** to restore the default camera. Canvas resizing and
+high-DPI rendering do not change measurements or infer actual defect depth.
+After updating, rebuild the frontend (`cd frontend && npm run build`) and refresh
+port 8000, or restart/use the Vite development server on port 5173.
