@@ -65,6 +65,12 @@ def test_selective_collection_and_build_are_reproducible_and_test_safe(tmp_path,
     original=source/'raw'/manifest[0]['source_image']
     before=original.read_bytes();(prepared/manifest[0]['prepared_image']).write_bytes(b'edited prepared image')
     assert original.read_bytes()==before
+    prior=tmp_path/'previous-manifest.json'
+    prior.write_text(json.dumps([next(r for r in manifest if r['country']==country) for country in ('India','Japan','Czech')]))
+    protected=collector.collect(None,tmp_path/'protected-selection',per_subset=20,max_mib=20,reuse=source,prior_manifest=prior)
+    assert protected['selected_images']==60
+    assert all(v['preferred_new_block_pairs']>0 for v in protected['subsets'].values())
+    assert protected['network_bytes_this_run']==0
 
 
 def test_gallery_api_is_bounded_and_labels_ground_truth(tmp_path,monkeypatch):
