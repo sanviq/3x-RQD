@@ -29,3 +29,8 @@ runs/
 *.download.json
 /datasets/
 data/rdd2022/
+
+# Local provider credentials
+.env
+.env.*
+!.env.maps.example

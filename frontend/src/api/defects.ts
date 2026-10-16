@@ -21,7 +21,7 @@ export function isDefectDetection(v:unknown):v is DefectDetection {
       finiteNumber(d.area_fraction)&&d.area_fraction>=0&&d.area_fraction<=1&&d.depth_mm===null&&d.physical_dimensions===null&&
       isRecord(evidence)&&(v.method==='opencv_multiscale_contours'
         ? d.provenance==='opencv_candidate'&&['local_contrast','boundary_strength','solidity'].every(k=>finiteNumber(evidence[k]))
-        : d.provenance==='yolo_prediction'&&['D00','D10','D20','D40'].includes(String(d.detection_code))&&d.kind===(d.detection_code==='D40'?'Pothole':'Crack')&&typeof d.detection_label==='string'&&d.geometry_source==='bounding_box_schematic');
+        : d.provenance==='yolo_prediction'&&['D00','D10','D20','D40'].includes(String(d.detection_code))&&d.kind===(d.detection_code==='D40'?'Pothole':'Crack')&&typeof d.detection_label==='string'&&['bounding_box_schematic','model_segmentation'].includes(String(d.geometry_source)));
   });
 }
 export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal):Promise<DefectDetection> {

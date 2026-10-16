@@ -57,7 +57,7 @@ def test_upload_validation_and_response():
 def test_physical_area_survives_processing_resize():
     image = cv2.resize(chip_image(), (1500, 1200))
     result, _ = extract_features(image, 0.5)
-    assert result["image"]["processed_width"] == 1024
+    assert result["image"]["processed_width"] == 1500  # New 1536 px temporary processing cap preserves this source.
     assert np.isclose(result["physical_measurements"]["area_sq_ft"],
                       1500 * 1200 * 0.5 ** 2 / 92903.04)
 

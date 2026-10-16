@@ -43,7 +43,13 @@ def score(features, artifact=None, capture_type="road_scene"):
         result["interpretation"] = "No trained road-condition model is installed. The diagnostic texture index is an arbitrary heuristic, not a road-health score or confidence. No good/fair/poor label is assigned."
         return result
     vector = np.array([[features[name] for name in FEATURE_NAMES]])
-    predicted = float(artifact["model"].predict(vector)[0])
+    try:
+        predicted = float(artifact["model"].predict(vector)[0])
+    except (ValueError,TypeError,RuntimeError,KeyError,AttributeError,IndexError,OverflowError) as exc:
+        result["method"] = "invalid_model_output"
+        result["reasons"] = ["Optional texture regressor failed ("+type(exc).__name__+"). Check the surface-v4 artifact schema; image descriptors and the independent defect score remain available."]
+        result["interpretation"] = result["reasons"][0]
+        return result
     if not np.isfinite(predicted):
         result["method"] = "invalid_model_output"
         result["interpretation"] = "The model returned a non-finite prediction; no condition verdict is available."

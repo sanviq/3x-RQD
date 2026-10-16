@@ -1,3 +1,4 @@
+import {isRoadRegion} from './roadRegion';
 import { isDefectDetection } from './defects';
 import { featureNames } from '../types/api';
 import type { AnalysisInput, AnalysisResponse, HealthResponse } from '../types/api';
@@ -5,6 +6,15 @@ import { request, ApiError, isRecord, finiteNumber } from './client';
 
 export function isAnalysisResponse(value: unknown): value is AnalysisResponse {
   if (!isRecord(value)) return false;
+  if(value.road_region!==undefined&&!isRoadRegion(value.road_region))return false;
+  if(value.surface_measurements!==undefined){
+    const m=value.surface_measurements;
+    if(!isRecord(m)||!['native_road_area','candidate_density','equivalent_diameter','inter_chip_gap'].every(k=>{const v=m[k];return isRecord(v)&&(v.value===null||finiteNumber(v.value)&&v.value>=0)&&typeof v.unit==='string'&&['estimated','limited','unavailable'].includes(String(v.status))&&(v.reason===null||typeof v.reason==='string')&&(v.value!==null||v.status==='unavailable')}))return false;
+  }
+  if(value.surface_quality!==undefined){
+    const q=value.surface_quality;
+    if(!isRecord(q)||!['measured','limited'].includes(String(q.status))||!Array.isArray(q.issues)||!q.issues.every(i=>isRecord(i)&&typeof i.code==='string'&&typeof i.message==='string'&&typeof i.guidance==='string'&&Array.isArray(i.affects)&&i.affects.every(v=>typeof v==='string'))||typeof q.method!=='string')return false;
+  }
   if(value.calibration!==undefined){
     const c=value.calibration;
     if(!isRecord(c)||c.validated!==false||typeof c.source!=='string'||typeof c.notice!=='string'||!isRecord(c.bounds)||

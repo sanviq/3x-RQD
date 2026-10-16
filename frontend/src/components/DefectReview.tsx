@@ -7,7 +7,7 @@ export function DefectReview({url,detection,busy,error,excluded=[],onToggle,onRe
   const [outlines,setOutlines]=useState(true);
   const labelled=new Set([...(detection?.defects??[])].sort((a,b)=>b.area_fraction-a.area_fraction).slice(0,12).map(d=>d.id));
   return <section className="panel defect-review"><PanelTitle title="Detected road candidates"><Badge>{busy?'Detecting…':detection?detection.defects.length+' candidates':'Not detected'}</Badge></PanelTitle>
-    {detection?.method==='yolo_rdd_detection'&&<p className="input-help">Trained RDD2022 detector · D00, D10, D20 and D40. Outlines are schematic bounding boxes, not segmentation or measured depth. Confidence is not road quality.</p>}
+    {detection?.method==='yolo_rdd_detection'&&<p className="input-help">Trained RDD2022 detector · D00, D10, D20 and D40. Outlines use actual model masks when supplied; box-only predictions remain schematic rectangles. Neither measures depth. Confidence is not road quality.</p>}
     <p className="input-help">The image is sent to the API automatically. Review the pixel-based candidates before using them. Labels, severity and confidence are unvalidated estimates; metric depth is unknown.</p>
     <div className="action-row"><label className="checkbox-row"><input type="checkbox" checked={outlines} onChange={e=>setOutlines(e.target.checked)}/>Show defect outlines</label><button className="text-button" disabled={busy} onClick={onRetry}>Detect again</button></div>
     <div className="defect-photo"><img src={url} alt={outlines?'Original uploaded road with API defect outlines':'Original uploaded road without outlines'}/>

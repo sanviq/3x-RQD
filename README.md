@@ -158,3 +158,9 @@ POST /detect-defects returns OpenCV candidate polygons, original pixel bounding 
 ## Integrated network and detector workflows
 
 The road-network page retains both imported GeoJSON connectivity and saved GPS survey records. Surface inspection retains the separate optional detector workspace, dataset gallery and local-save workflow, alongside automatic road-region texture analysis and wheel-level simulation. See [NETWORK_AND_ANALYSIS.md](NETWORK_AND_ANALYSIS.md).
+
+## Real map and inspection-backed dashboard
+
+Overview, Road network and Repair planner now use Leaflet/OSM with explicit, persistent evidence links. Unknown roads remain “Not inspected”; sample scores are not substituted. See [map workflow, configuration, provider policies and checks](MAP_AND_ANALYTICS.md). Public provider availability is independent of the local API; errors preserve existing inspections.
+
+Surface inspection measurement methods, unavailable-field tracing, optional models and verification: [SURFACE_INSPECTION.md](SURFACE_INSPECTION.md).

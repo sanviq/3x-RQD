@@ -10,7 +10,19 @@ export const featureNames = [
 export type FeatureName = typeof featureNames[number];
 export interface HealthResponse { status: string; model_loaded: boolean; feature_version: string }
 export type CaptureType = 'road_scene' | 'surface_crop';
+
+export interface RoadRegion {
+ road_quad:[DefectPoint,DefectPoint,DefectPoint,DefectPoint];method:'provided_outline'|'declared_surface_crop'|'semantic_road_mask'|'opencv_road_appearance';
+ status:'selected'|'review_required'|'needs_outline';requires_review:boolean;confidence:null;confidence_calibrated:false;
+ image:{width:number;height:number};message:string;appearance_fraction:number|null;model?:{configured:boolean;used:boolean;reason:string}|null;
+}
+export interface SurfaceMetric {value:number|null;unit:string;status:'estimated'|'limited'|'unavailable';reason:string|null}
+export interface SurfaceIssue {code:string;message:string;guidance:string;affects:string[]}
+
 export interface AnalysisResponse {
+  road_region?:RoadRegion;
+  surface_measurements?:{native_road_area:SurfaceMetric;candidate_density:SurfaceMetric;equivalent_diameter:SurfaceMetric;inter_chip_gap:SurfaceMetric};
+  surface_quality?:{status:'measured'|'limited';issues:SurfaceIssue[];method:string;model:{configured:boolean;used:boolean;reason:string};candidate_limit_reached:boolean};
   calibration?:{source:string;mm_per_original_pixel:number|null;scale_uncertainty_percent:number|null;validated:false;bounds:Record<string,{lower:number;upper:number}|null>;notice:string};
   analysis_region?:{road_quad:DefectPoint[]|null;processed_pixel_count:number;image_fraction:number;scope:string};
   defect_detection?:DefectDetection;
@@ -48,7 +60,7 @@ export interface RoadDefect {
   bbox:{x:number;y:number;width:number;height:number};
   bbox_normalized:{x:number;y:number;width:number;height:number};
   area_fraction:number;provenance:'opencv_candidate'|'yolo_prediction';depth_mm:null;physical_dimensions:null;
-  detection_code?:string;detection_label?:string;geometry_source?:'bounding_box_schematic';
+  detection_code?:string;detection_label?:string;geometry_source?:'bounding_box_schematic'|'model_segmentation';
   evidence:{local_contrast?:number;boundary_strength?:number;solidity?:number;detection_code?:string;detection_label?:string};
 }
 export interface DefectDetection {

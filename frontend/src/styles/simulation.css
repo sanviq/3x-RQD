@@ -110,3 +110,6 @@
 .quality-evidence-warning{font-size:12px;line-height:1.7;padding:12px 15px;border:1px solid #cab17a;border-radius:10px;background:#eee3c7;color:#6f542d;margin:15px 0}
 
 .quality-counts strong.quality-unassessed{font-size:11px;font-weight:500;color:#796950}
+
+/* Surface evidence and per-field capture guidance. */
+.measurement-hint{display:block!important;line-height:1.5;max-width:28ch;margin-top:7px;color:#79786b;font-size:10px!important}.inspection-road-region .footprint-stage{max-height:360px}.capture-guidance li strong{font-weight:600}.inspection-road-region .panel-title{gap:12px;align-items:flex-start}.inspection-road-region .badge{white-space:normal}.inspection-road-region .sim-path-tools{flex-wrap:wrap}.assessment-card details{font-size:12px;line-height:1.7;margin:12px 0}

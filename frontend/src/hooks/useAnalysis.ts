@@ -1,3 +1,5 @@
+import {detectRoadRegion} from '../api/roadRegion';
+import type {RoadRegion} from '../types/api';
 import {rescoreRoad} from '../api/qualityScore';
 import type {RoadQualityScore} from '../api/qualityScore';
 import { detectRoadDefects } from '../api/defects';
@@ -10,6 +12,10 @@ import { inspectImage, optionalNumber } from '../utils/imageValidation';
 import type { SelectedImage } from '../utils/imageValidation';
 export function useAnalysis() {
   const [selected, setSelected] = useState<SelectedImage | null>(null);
+  const [roadRegion,setRoadRegion]=useState<RoadRegion|null>(null);
+  const [regionBusy,setRegionBusy]=useState(false);
+  const [regionError,setRegionError]=useState('');
+  const regionController=useRef<AbortController|null>(null);
   const [roadQuad,setRoadQuad] = useState<RoadQuad>(sceneQuad);
   const [videoSource, setVideoSource] = useState<{file:File;url:string;frameTime:number}|null>(null);
   const currentVideo = useRef<{file:File;url:string;frameTime:number}|null>(null);
@@ -25,6 +31,7 @@ export function useAnalysis() {
   useEffect(()=>{
     setDetection(null);setDetectionSource(null);setDetectionError('');setExcludedDefects([]);
     if(!selected){setDetectionBusy(false);return}
+    if(regionBusy){setDetectionBusy(true);return}
     const abort=new AbortController();let cancelled=false;
     setDetectionBusy(true);
     const timer=window.setTimeout(()=>{
@@ -33,7 +40,7 @@ export function useAnalysis() {
         .finally(()=>{if(!cancelled)setDetectionBusy(false)});
     },250);
     return()=>{cancelled=true;window.clearTimeout(timer);abort.abort()};
-  },[selected,roadQuad,detectionRevision]);
+  },[selected,roadQuad,detectionRevision,regionBusy]);
 
 
   const [scoreRecord,setScoreRecord]=useState<{key:string;value:RoadQualityScore}|null>(null);
@@ -74,8 +81,9 @@ export function useAnalysis() {
   const revision = useRef({value:0});
   const currentImage = useRef<SelectedImage | null>(null);
   const mounted = useRef(true);
-  const invalidate = useCallback(() => {
+  const invalidate = useCallback((preserveRegion=false) => {
     window.clearTimeout(automaticTimer.current);
+    if(!preserveRegion){regionController.current?.abort();regionController.current=null;setRegionBusy(false);}
     revision.current.value++; controller.current?.abort(); controller.current = null;
     setBusy(false); setValidating(false); setResult(null); setErrors({}); setNotice('');
   }, []);
@@ -83,13 +91,25 @@ export function useAnalysis() {
     mounted.current = true;
     const lifecycleRevision=revision.current;
     return () => {
-      mounted.current = false; lifecycleRevision.value++; controller.current?.abort();
+      mounted.current = false; lifecycleRevision.value++; controller.current?.abort();regionController.current?.abort();
       if (currentImage.current) URL.revokeObjectURL(currentImage.current.url);
       if (currentVideo.current) URL.revokeObjectURL(currentVideo.current.url);
     };
   }, []);
+  const locateRegion=async(image:SelectedImage,type:CaptureType)=>{
+    const c=new AbortController();regionController.current=c;setRegionBusy(true);setRegionError('');setRoadRegion(null);
+    try{
+      const proposal=await detectRoadRegion(image.file,type,c.signal);
+      if(!mounted.current||currentImage.current!==image||regionController.current!==c||c.signal.aborted)return;
+      if(proposal){
+        if(proposal.image.width!==image.width||proposal.image.height!==image.height)throw Error('Road outline dimensions do not match the original image. Select the road corners manually.');
+        setRoadRegion(proposal);setRoadQuad(proposal.road_quad);
+      }
+    }catch(e){if(mounted.current&&currentImage.current===image&&regionController.current===c&&!c.signal.aborted){setRegionError((e as Error).message);setRoadQuad(fullQuad)}}
+    finally{if(mounted.current&&regionController.current===c){setRegionBusy(false);regionController.current=null}}
+  };
   const select = async (file: File, videoFile?: File, frameTime=0) => {
-    invalidate();
+    invalidate();setRoadRegion(null);setRegionError('');
     setScale(''); setScaleUncertainty(''); setPitch(''); setRoadQuad(videoFile || captureType === 'road_scene' ? sceneQuad : fullQuad);
     if(videoFile)setCaptureType('road_scene');
     if (currentVideo.current?.file !== videoFile) {
@@ -106,14 +126,15 @@ export function useAnalysis() {
     try {
       const image = await inspectImage(file);
       if (!mounted.current || version !== revision.current.value) { URL.revokeObjectURL(image.url); return; }
-      currentImage.current = image; setSelected(image);
+      currentImage.current = image;setRegionBusy(true);setSelected(image);
+      await locateRegion(image,videoFile?'road_scene':captureType);
     } catch (error) {
       if (mounted.current && version === revision.current.value) setErrors({ image: (error as Error).message });
     } finally { if (mounted.current && version === revision.current.value) setValidating(false); }
   };
   const submit = async () => {
     window.clearTimeout(automaticTimer.current);
-    if (controller.current || busy || validating) return;
+    if (controller.current || busy || validating || regionBusy) return;
     const parsedScale = optionalNumber(scale, 'scale');
     const parsedPitch = optionalNumber(pitch, 'pitch');
     const nextErrors: Record<string, string> = {};
@@ -136,31 +157,32 @@ export function useAnalysis() {
     } finally { if (mounted.current && version === revision.current.value) { setBusy(false); controller.current = null; } }
   };
   // Upload and road-footprint changes run the complete API analysis, including
-  // real aggregate candidates and an overlay; calibration edits remain explicit.
+  // real aggregate candidates and an overlay. Calibration edits also refresh the current result.
   useEffect(()=>{
-    if(!selected)return;
+    if(!selected||regionBusy)return;
     automaticTimer.current=window.setTimeout(()=>{void submit()},650);
     return()=>window.clearTimeout(automaticTimer.current);
     // submit reads the settings from the render that selected this footprint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[selected,roadQuad]);
-  const updateRoadQuad=(value:RoadQuad)=>{invalidate();setRoadQuad(value)};
+  },[selected,roadQuad,regionBusy,captureType,scale,scaleUncertainty,pitch,overlay]);
+  const updateRoadQuad=(value:RoadQuad)=>{invalidate();setRoadRegion(null);setRegionError('');setRoadQuad(value)};
   const reset = () => {
-    invalidate();
+    invalidate();setRoadRegion(null);setRegionError('');
     if (currentVideo.current) URL.revokeObjectURL(currentVideo.current.url);
     currentVideo.current = null; setVideoSource(null); setCaptureType('road_scene'); setRoadQuad(sceneQuad);
     if (currentImage.current) URL.revokeObjectURL(currentImage.current.url);
     currentImage.current = null; setSelected(null); setScale(''); setScaleUncertainty(''); setPitch(''); setOverlay(true);
   };
   return {
+    roadRegion,regionBusy,regionError,retryRoadRegion:()=>{if(selected){invalidate();void locateRegion(selected,captureType)}},
     qualityScore,qualityScoreBusy,qualityScoreError,retryQualityScore:()=>setScoreRevision(n=>n+1),
     excludedDefects,toggleDefect:(id:string)=>setExcludedDefects(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]),
     detection,detectionBusy,detectionError,retryDetection:()=>setDetectionRevision(n=>n+1),
-    selected, videoSource, roadQuad, setRoadQuad:updateRoadQuad, captureType, setCaptureType: (value:CaptureType) => { invalidate(); setCaptureType(value); setRoadQuad(value === 'surface_crop' ? fullQuad : sceneQuad); setScale(''); setScaleUncertainty(''); }, scale, pitch, overlay, result, busy, validating, errors, notice, select, submit, reset,
-    setScale: (value: string) => { invalidate(); setScale(value); },
-    scaleUncertainty,setScaleUncertainty:(value:string)=>{invalidate();setScaleUncertainty(value)},
-    setPitch: (value: string) => { invalidate(); setPitch(value); },
-    setOverlay: (value: boolean) => { invalidate(); setOverlay(value); },
+    selected, videoSource, roadQuad, setRoadQuad:updateRoadQuad, captureType, setCaptureType: (value:CaptureType) => { invalidate();setRoadRegion(null);setRegionError('');setCaptureType(value);setRoadQuad(fullQuad);setScale('');setScaleUncertainty('');if(selected)void locateRegion(selected,value); }, scale, pitch, overlay, result, busy, validating, errors, notice, select, submit, reset,
+    setScale: (value: string) => { invalidate(true); setScale(value); },
+    scaleUncertainty,setScaleUncertainty:(value:string)=>{invalidate(true);setScaleUncertainty(value)},
+    setPitch: (value: string) => { invalidate(true); setPitch(value); },
+    setOverlay: (value: boolean) => { invalidate(true); setOverlay(value); },
     cancel: () => { invalidate(); setNotice('Request cancelled. Server computation may still finish.'); },
   };
 }

@@ -71,10 +71,17 @@ def detect_defects(image, road_quad=None, *, native_resolution=False):
         return result
 
     minimum = min(w, h)
+    enhancement = None
+    if region.mean()<65 or region.std()<18:
+        enhanced=cv2.createCLAHE(clipLimit=2.0,tileGridSize=(8,8)).apply(smooth)
+        enhancement="CLAHE for low illumination/contrast; geometry remains in original coordinates"
+    else:
+        enhanced=smooth
+    result["preprocessing"]=enhancement or "Original luminance with mild smoothing"
     responses = []
     for fraction in (.035, .08, .16):
         size = max(9, int(minimum*fraction) | 1)
-        responses.append(cv2.morphologyEx(smooth, cv2.MORPH_BLACKHAT,
+        responses.append(cv2.morphologyEx(enhanced, cv2.MORPH_BLACKHAT,
                          cv2.getStructuringElement(cv2.MORPH_RECT if native_resolution and size>121 else cv2.MORPH_ELLIPSE, (size, size))))
     blackhat = np.maximum.reduce(responses)
     local = cv2.GaussianBlur(smooth, (0, 0), max(3, minimum*.035)).astype(np.float32)

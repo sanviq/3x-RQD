@@ -16,7 +16,7 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
   const [sampleImage,setSampleImage]=useState<File|null>(null);
   const image=sampleImage??uploadedImage;
   useEffect(()=>setSampleImage(null),[uploadedImage]);
-  const [settings,setSettings]=useState<DetectionSettings>({mode:'demo',confidence:.35,resolution:640});
+  const [settings,setSettings]=useState<DetectionSettings>({mode:'model',confidence:.35,resolution:640});
   const [roll,setRoll]=useState('');
   const [inclination,setInclination]=useState<Record<string,unknown>|null>(null);
   const [status,setStatus]=useState<DetectorStatus|null>(null);
@@ -98,12 +98,12 @@ export function DetectionWorkspace({image:uploadedImage,scale,pitch}:{image?:Fil
   return <section className="backend-workspace results-stack" aria-label="Connected road defect service">
     <DatasetGallery onSelect={setSampleImage}/>
     {sampleImage&&<Note>Real dataset preview selected: {sampleImage.name}. Existing capture calibration and IMU inputs are not applied to this unrelated image. Detection mode still controls whether results are illustrative fixtures or actual model predictions. <button className="text-button" onClick={()=>setSampleImage(null)}>Return to uploaded capture</button></Note>}
-    <section className="panel"><PanelTitle title="Road-defect analysis" eyebrow="CONNECTED BACKEND · ADDITIONAL WORKFLOW"><Badge tone={status?.model.configured?'good':'lavender'}>{status?.model.configured?'Road weights configured':'Explicit demo mode available'}</Badge></PanelTitle>
-      <p className="fine-print">This complements the granular surface inspection above. It supports optional YOLO road-defect models, video tracking, heatmaps, sensor inputs, repair calculations and local GPS records.</p>
-      <Note>{settings.mode==='demo'?'Demo annotations are fixed illustrative fixtures, not detections from an uploaded capture. Confidence values are synthetic. Real inference requires trusted road-specific weights.':'Local model mode uses configured road-defect weights. Severity and road scores are unvalidated estimates; a generic COCO detector is not suitable.'}</Note>
+    <section className="panel"><PanelTitle title="Road-defect analysis" eyebrow="CONNECTED BACKEND · ADDITIONAL WORKFLOW"><Badge tone={status?.model.configured?'good':'lavender'}>{status?.model.configured?'Road weights configured':'Optional road weights not configured'}</Badge></PanelTitle>
+      <p className="fine-print">Automatic road-region, chip and OpenCV defect analysis runs above without model weights. This additional workbench supports optional YOLO road-defect models, video tracking, sensor inputs, repair calculations and local GPS records.</p>
+      <Note>{settings.mode==='demo'?'Demo annotations are fixed illustrative fixtures, not detections from an uploaded capture. Confidence values are synthetic. Real inference requires trusted road-specific weights.':'This optional model mode requires trusted road-defect weights. Without them, use the automatic image analysis above. Severity is an unvalidated image estimate, and the legacy engineering grade remains withheld. A generic COCO detector is not suitable.'}</Note>
       <div className="segmented source-tabs" role="group" aria-label="Defect analysis source">{(['image','video','camera'] as const).map(s=><button key={s} className={source===s?'active':''} aria-pressed={source===s} onClick={()=>chooseSource(s)}>{s==='image'?'Image':s==='video'?'Video upload':'Live tracked camera'}</button>)}</div>
       <fieldset disabled={busy||running} className="backend-controls">
-        <label className="field">Detection mode<select aria-label="Defect detection mode" value={settings.mode} onChange={e=>setSettings({...settings,mode:e.target.value as 'demo'|'model'})}><option value="demo">Demo · illustrative fixture annotations</option><option value="model">Local road-specific YOLO model</option></select></label>
+        <label className="field">Detection mode<select aria-label="Defect detection mode" value={settings.mode} onChange={e=>setSettings({...settings,mode:e.target.value as 'demo'|'model'})}>{import.meta.env.VITE_ENABLE_DEMOS==='true'&&<option value="demo">Demo · illustrative fixture annotations</option>}<option value="model">Local road-specific YOLO model</option></select></label>
         <label className="field">Confidence threshold · {percent(settings.confidence)}<input type="range" aria-label="Detection confidence threshold" min=".1" max=".95" step=".05" value={settings.confidence} onChange={e=>setSettings({...settings,confidence:Number(e.target.value)})}/></label>
         <label className="field">Processing resolution<select aria-label="Detection processing resolution" value={settings.resolution} onChange={e=>setSettings({...settings,resolution:Number(e.target.value)})}>{[320,640,960,1280].map(v=><option value={v} key={v}>{v} px{v===320?' · edge starting point':''}</option>)}</select></label>
         <label className="field">Measured IMU roll · optional degrees<input type="number" min="-90" max="90" step="any" value={roll} onChange={e=>setRoll(e.target.value)}/></label>

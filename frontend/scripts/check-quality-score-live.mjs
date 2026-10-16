@@ -6,7 +6,7 @@ const base=process.env.ROAD_HEALTH_API_URL??'http://127.0.0.1:8000';
 const photo=await readFile(new URL('../../tests/fixtures/pothole-road.jpg',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0;
-async function upload(bytes=photo,quad){const form=new FormData();form.append('image',new Blob([bytes]),'source.jpg');if(quad)form.append('road_quad',JSON.stringify(quad));const r=await fetch(base+'/detect-defects',{method:'POST',body:form});const d=await r.json();assert.equal(r.status,200,JSON.stringify(d));assert.ok(d.road_quality_score,d.score_error);return d}
+async function upload(bytes=photo,quad,expectScore=true){const form=new FormData();form.append('image',new Blob([bytes]),'source.jpg');if(quad)form.append('road_quad',JSON.stringify(quad));const r=await fetch(base+'/detect-defects',{method:'POST',body:form});const d=await r.json();assert.equal(r.status,200,JSON.stringify(d));if(expectScore)assert.ok(d.road_quality_score,d.score_error);return d}
 async function rescore(token,excluded=[],config){const r=await fetch(base+'/road-quality-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score_token:token,excluded_ids:excluded,...(config?{config}:{})})});return {status:r.status,value:await r.json()}}
 function verify(s){
  assert.equal(s.status,'provisional');assert.equal(s.validated,false);assert.equal(s.score_is_model_confidence,false);assert.ok(Number.isFinite(s.score)&&s.score>=0&&s.score<=100);
@@ -34,7 +34,8 @@ assert.equal((await rescore(d.score_token,[largest,largest])).status,422);checks
 assert.equal((await rescore(d.score_token,[],{...initial.config,area_cap:100,hotspot_cap:100})).status,422);checks++;
 assert.equal((await rescore('missing-snapshot-token-1234567890')).status,410);checks++;
 const injected=await fetch(base+'/road-quality-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score_token:d.score_token,excluded_ids:[],defects:[]})});assert.equal(injected.status,422);checks++;
-const smooth=await upload(await readFile(new URL('../../tests/fixtures/smooth-road.png',import.meta.url)));verify(smooth.road_quality_score);assert.equal(smooth.defects.length,0);assert.equal(smooth.road_quality_score.score,100);assert.equal(smooth.road_quality_score.status,'provisional');checks++;
+// This fixture is a uniform image without visible road texture, not verified smooth-road evidence.
+const blank=await upload(await readFile(new URL('../../tests/fixtures/smooth-road.png',import.meta.url)),undefined,false);assert.equal(blank.defects.length,0);assert.equal(blank.road_quality_score,null);assert.match(blank.score_error,/no usable tonal detail/);assert.equal(blank.score_token,undefined);checks++;
 const crc=b=>{let c=0xffffffff;for(const v of b){c^=v;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1}return (c^0xffffffff)>>>0};
 const chunk=(name,bytes)=>{const type=Buffer.from(name),out=Buffer.alloc(bytes.length+12);out.writeUInt32BE(bytes.length);type.copy(out,4);bytes.copy(out,8);out.writeUInt32BE(crc(Buffer.concat([type,bytes])),bytes.length+8);return out};
 const width=1739,height=1081,raw=Buffer.alloc(height*(width*3+1));
@@ -42,7 +43,8 @@ for(let y=0;y<height;y++)for(let x=0;x<width;x++){const dark=((x-900)/120)**2+((
 const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(width);ihdr.writeUInt32BE(height,4);ihdr[8]=8;ihdr[9]=2;
 const native=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ihdr),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]);
 
-const nativeDetection=await upload(native);verify(nativeDetection.road_quality_score);assert.deepEqual([nativeDetection.road_quality_score.image.width,nativeDetection.road_quality_score.image.height],[width,height]);assert.equal(nativeDetection.road_quality_score.summary.visible_road_pixel_area,width*height);assert.equal(nativeDetection.road_quality_score.image.sha256,hash(native));checks++;
+// Explicit full-frame ROI isolates native-resolution normalization; omitted ROI now invokes automatic road selection.
+const nativeDetection=await upload(native,[[0,0],[1,0],[1,1],[0,1]]);verify(nativeDetection.road_quality_score);assert.deepEqual([nativeDetection.road_quality_score.image.width,nativeDetection.road_quality_score.image.height],[width,height]);assert.equal(nativeDetection.road_quality_score.summary.visible_road_pixel_area,width*height);assert.equal(nativeDetection.road_quality_score.image.sha256,hash(native));checks++;
 // EXIF-oriented portrait: native dimensions must follow the orientation, never stretch.
 const original=await readFile(new URL('../../tests/fixtures/pothole-road.jpg',import.meta.url));
 const exif=Buffer.from('45786966000049492a0008000000010012010300010000000600000000000000','hex'),marker=Buffer.alloc(4);marker[0]=255;marker[1]=225;marker.writeUInt16BE(exif.length+2,2);

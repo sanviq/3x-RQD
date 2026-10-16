@@ -1,3 +1,4 @@
+vi.mock('../src/api/roadRegion',()=>({detectRoadRegion:vi.fn(async()=>null)}));
 import { act, renderHook, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useAnalysis } from '../src/hooks/useAnalysis';
