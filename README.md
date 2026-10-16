@@ -1,9 +1,14 @@
-# Road Quality Measurement — backend starter
+# Road Health — inspection and simulation workspace
 
 Python/FastAPI backend for close-up road-surface analysis. Upload a road crop to
 obtain aggregate-chip candidates, texture/boundary/spacing proxies, optional
-physical measurements, and an experimental 0–100 surface quality index.
+physical measurements, and diagnostic image descriptors. No road-health grade
+is issued without a validated condition model.
 This repository contains no training photos or pretrained model.
+
+## Full application
+
+See [RUNNING.md](RUNNING.md) for Windows setup, launching both services with `node dev.mjs`, uploaded-photo driving, repairs, weather effects and verification status. Use Python 3.11/3.12 and Node 24 LTS (or 22.18+). The existing backend setup below is also supported.
 
 ## Setup and run
 
@@ -22,6 +27,7 @@ Open http://127.0.0.1:8000/docs for an interactive upload/testing interface.
 ```sh
 curl -X POST http://127.0.0.1:8000/analyze \
   -F 'image=@/absolute/path/road.jpg' \
+  -F 'capture_type=surface_crop' \
   -F 'mm_per_pixel=0.5' \
   -F 'include_overlay=true'
 ```
@@ -38,8 +44,7 @@ edge chips are excluded, causing some density undercount. Maximum upload is
 Optional `pitch_degrees` records a user-supplied calibrated sensor measurement;
 the API does not infer slope from a single photo. Pitch is not used in scoring.
 `include_overlay=true` returns a base64 PNG: green candidate boundaries, red
-potential dark linear distress. There is no separate frontend; Swagger `/docs`
-is the basic testing UI. No uploaded images are stored.
+potential dark linear distress. The React workspace is in `frontend/`; Swagger `/docs` is available for API inspection. No uploaded images are stored.
 
 ## Features and method
 
@@ -61,12 +66,23 @@ Physical measurements account for resizing. `chip_coverage_fraction` is visible
 Gap is an equivalent-circle approximation, not measured edge-to-edge spacing.
 The unsegmented area does not identify binder/fines chemically or materially.
 
-The fallback score subtracts up to 55 points for dark linear area, 25 for dark
-area, and 20 for nonuniform coverage. Its thresholds are arbitrary prototype
-settings; bands are good ≥75, fair ≥50, poor <50. Low-detail images receive a
-null score and an unassessable band. These checks cannot reject every unsuitable
-image; always read image warnings and inspect the overlay. No score is
-a validated engineering quality grade, PCI, IRI, friction or safety measure.
+The old formula is retained only as a diagnostic visual index:
+
+`clip(100 - [55*min(1,L/0.08) + 25*min(1,D/0.25) + 20*(1-U)], 0, 100)`
+
+L is dark linear area, D is dark area and U is candidate coverage uniformity.
+These coefficients are arbitrary and do not measure road health or confidence.
+Zero candidates now produces U=0, correcting the previous false-perfect value.
+
+With no validated model, the API returns `road_quality_index=null` and
+`band=unassessable`. A suitable surface crop can return `visual_proxy_index`;
+no good/fair/poor label is assigned. Local unvalidated regression predictions
+are also diagnostic only. `capture_type=road_scene` (the default), insufficient
+detail (brightness std <8/255 or Laplacian variance <25), extreme mean exposure
+(<25/255 or >235/255), and zero candidates withhold the diagnostic index.
+Scene captures also withhold physical aggregate measurements. Capture type is
+user-declared; this is not automatic road recognition. Feature schema is
+`surface-v2`; older weights must not be reused.
 
 ## Train on your labeled images
 
@@ -87,7 +103,7 @@ The script extracts the same features, holds out entire routes, trains a random
 forest regressor, and saves `models/road_quality.joblib` with MAE/RMSE in
 `models/road_quality.metrics.json`. Only the training split is fitted. Restart
 the server to use it. The API reports `trained_random_forest`, but continues to
-report `validated=false` until independent field validation is implemented.
+report `validated=false` and expose predictions only as diagnostic indices until independent field validation is implemented.
 Load only trusted model files: joblib artifacts can execute Python code.
 
 ## Tests
@@ -116,3 +132,7 @@ aggregation and image-derived calibrated slope estimation are future work.
   and [GLCM texture features](https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix).
 
 Research informs the feature choices; it does not validate the starter score.
+
+## Road defect candidates and wheel simulation
+
+POST /detect-defects returns OpenCV candidate polygons, original pixel bounding boxes, rectified-road coordinates, visual severity and uncalibrated evidence confidence. POST /analyze includes the same defect_detection object. Depth and physical dimensions remain null. The React upload workflow calls detection automatically and maps reviewed candidates into the wheel-level suspension simulation. No hardcoded sample defects are inserted for uploaded media. See DETECTION.md for documented approximations, test commands and limitations.

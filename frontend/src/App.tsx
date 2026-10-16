@@ -5,6 +5,8 @@ import { useAnalysis } from './hooks/useAnalysis';
 import { Overview } from './components/Overview';
 import { Inspection } from './components/Inspection';
 import { Network } from './components/Network';
+import {ConnectedNetwork} from './components/ConnectedNetwork';
+import {useRoadNetwork} from './hooks/useRoadNetwork';
 import { Planner } from './components/Planner';
 import { ScenarioLab } from './components/ScenarioLab';
 import { Evaluation, Materials } from './components/Resources';
@@ -23,6 +25,7 @@ const navigation:{id:Page;label:string;icon:string;group:string}[]=[
 ];
 export default function App(){
   const [page,setPage]=useState<Page>('overview');
+  const [labOpened,setLabOpened]=useState(false);
   const [workspaceDate]=useState(()=>new Intl.DateTimeFormat('en-IN',{day:'numeric',month:'short',year:'numeric'}).format(new Date()));
   const [demo,setDemo]=useState(true);
   const [selected,setSelected]=useState(segments[0].id);
@@ -35,9 +38,11 @@ export default function App(){
   const search=useRef<HTMLDialogElement>(null);
   const health=useHealth();
   const analysis=useAnalysis();
-  const navigate=(next:Page)=>{setPage(next);if(next==='inspection')setDemo(false);setDrawer(false);setNotifications(false);window.scrollTo({top:0,behavior:'instant'})};
-  const selectSegment=(id:string)=>{setDemo(true);setSelected(id);navigate('network')};
-  const healthLabel=health.loading?'Connecting…':health.health?health.health.model_loaded?'Trained model connected':'Heuristic mode connected':'Backend offline';
+  const roadNetwork=useRoadNetwork();
+  const [sampleNetwork,setSampleNetwork]=useState(false);
+  const navigate=(next:Page)=>{setPage(next);if(next==='lab')setLabOpened(true);if(next==='inspection')setDemo(false);setDrawer(false);setNotifications(false);window.scrollTo({top:0,behavior:'instant'})};
+  const selectSegment=(id:string)=>{setSampleNetwork(true);setDemo(true);setSelected(id);navigate('network')};
+  const healthLabel=health.loading?'Connecting…':health.health?health.health.model_loaded?'Trained model connected':'Texture analysis connected':'Backend offline';
   const openSettings=()=>{setDraftWeights([...weights] as Weights);settings.current?.showModal()};
   const total=draftWeights.reduce((s,x)=>s+x,0);
   const searchResults=navigation.filter(x=>(x.label+' '+x.group).toLowerCase().includes(query.toLowerCase()));
@@ -62,10 +67,10 @@ export default function App(){
         <div className="service-strip" role="status"><span><i className={'dot '+(health.loading?'lavender':health.health?'good':'offline')}/>{healthLabel}</span>{health.health?<small>{health.health.feature_version} · experimental assessment</small>:<button onClick={health.retry} disabled={health.loading} className="text-button">{health.loading?'Checking connection':'Retry connection'}<Icon name="refresh" size={12}/></button>}</div>
         <main id="main-content">
           {page==='overview'&&<Overview demo={demo} weights={weights} onNavigate={navigate} onSegment={selectSegment} analysis={analysis}/>}
-          {page==='inspection'&&<Inspection analysis={analysis}/>}
-          {page==='network'&&<Network demo={demo} weights={weights} selected={selected} onSelect={setSelected} onNavigate={navigate}/>}
+          {page==='inspection'&&<Inspection analysis={analysis} onSimulate={()=>navigate('lab')}/>}
+          {page==='network'&&<><div className="segmented preview-tabs"><button className={!sampleNetwork?'active':''} onClick={()=>setSampleNetwork(false)}>Your connected network</button><button className={sampleNetwork?'active':''} onClick={()=>setSampleNetwork(true)}>Sample network</button></div>{sampleNetwork?<Network demo weights={weights} selected={selected} onSelect={setSelected} onNavigate={navigate}/>:<ConnectedNetwork network={roadNetwork} analysis={analysis} onInspect={()=>navigate('inspection')} onTwin={()=>navigate('lab')}/>}</>}
           {page==='planner'&&<Planner demo={demo} weights={weights}/>}
-          {page==='lab'&&<ScenarioLab key={selected} demo={demo} weights={weights} selected={selected} onNavigate={navigate} analysis={analysis}/>}
+          {labOpened&&<div hidden={page!=='lab'}><ScenarioLab active={page==='lab'} demo={demo} selected={selected} onNavigate={navigate} analysis={analysis}/></div>}
           {page==='evaluation'&&<Evaluation/>}
           {page==='materials'&&<Materials/>}
         </main>

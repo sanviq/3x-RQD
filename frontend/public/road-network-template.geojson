@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "name": "Fictional format example — not surveyed roads",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "example-west",
+      "properties": {
+        "name": "Fictional west approach"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.6,
+            12.97
+          ],
+          [
+            77.601,
+            12.97
+          ],
+          [
+            77.602,
+            12.97
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "example-east",
+      "properties": {
+        "name": "Fictional east approach"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.602,
+            12.97
+          ],
+          [
+            77.603,
+            12.9704
+          ],
+          [
+            77.604,
+            12.9704
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "example-north",
+      "properties": {
+        "name": "Fictional north branch"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            77.601,
+            12.97
+          ],
+          [
+            77.601,
+            12.971
+          ],
+          [
+            77.602,
+            12.972
+          ]
+        ]
+      }
+    }
+  ]
+}

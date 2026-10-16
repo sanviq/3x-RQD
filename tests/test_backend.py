@@ -47,7 +47,8 @@ def test_upload_validation_and_response():
         result = client.post("/analyze", files=files, data={"include_overlay": True})
         assert result.status_code == 200
         body = result.json()
-        assert 0 <= body["assessment"]["road_quality_index"] <= 100
+        assert body["assessment"]["road_quality_index"] is None
+        assert body["assessment"]["band"] == "unassessable"
         assert body["assessment"]["validated"] is False
         assert body["inclination"]["degrees"] is None
         assert body["overlay_png_base64"]
@@ -80,7 +81,33 @@ def test_training_artifact_and_prediction(tmp_path):
     assert len(metrics["test_routes"]) == 1
     artifact = load_model(output)
     result, _ = extract_features(chip_image())
-    assessment = score(result["features"], artifact)
+    assessment = score(result["features"], artifact, capture_type="surface_crop")
     assert assessment["method"] == "trained_random_forest"
-    assert 0 <= assessment["road_quality_index"] <= 100
+    assert assessment["road_quality_index"] is None
+    assert 0 <= assessment["visual_proxy_index"] <= 100
     assert output.with_suffix(".metrics.json").exists()
+
+
+def test_selected_road_excludes_scenery_from_all_descriptors():
+    quad = [[32/127, 32/127], [95/127, 32/127],
+            [95/127, 95/127], [32/127, 95/127]]
+    y, x = np.indices((128, 128))
+    texture = (60 + ((x * 19 + y * 31 + x * y) % 150)).astype(np.uint8)
+    road = (x >= 32) & (x <= 95) & (y >= 32) & (y <= 95)
+    dark = np.zeros((128, 128, 3), np.uint8)
+    bright = np.full_like(dark, 255)
+    dark[road] = texture[road, None]
+    bright[road] = texture[road, None]
+    first, overlay = extract_features(dark, 1, quad)
+    second, _ = extract_features(bright, 1, quad)
+    assert first["features"] == second["features"]
+    assert first["chip_candidate_count"] == second["chip_candidate_count"]
+    assert first["analysis_region"]["processed_pixel_count"] == 4096
+    assert np.isclose(first["physical_measurements"]["area_sq_ft"], 4096 / 92903.04)
+    assert overlay.shape == dark.shape
+
+
+def test_selected_road_rejects_insufficient_region():
+    import pytest
+    with pytest.raises(ValueError, match="too small"):
+        extract_features(chip_image(), road_quad=[[.5, .5], [.501, .5], [.501, .501], [.5, .501]])

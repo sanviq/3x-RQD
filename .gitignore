@@ -6,3 +6,12 @@ models/*.joblib
 data/images/*
 !data/images/.gitkeep
 .DS_Store
+
+# Frontend dependencies and local verification output
+node_modules/
+dist/
+.npm-cache/
+.verification/
+test-results/
+playwright-report/
+*.tsbuildinfo

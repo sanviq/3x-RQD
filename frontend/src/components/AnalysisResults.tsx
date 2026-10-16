@@ -15,22 +15,25 @@ const featureLabels:Record<FeatureName,[string,string]> = {
 export function AnalysisResults({result,demo=false}:{result:AnalysisResponse;demo?:boolean}) {
   const assessment=result.assessment;
   const physical=result.physical_measurements;
-  const value=assessment.road_quality_index;
-  const methodLabels={experimental_heuristic:'Experimental heuristic',trained_random_forest:'Trained random forest',insufficient_visual_detail:'Insufficient visual detail'};
-  const unavailable=physical.area_sq_ft===null?'Add a valid original-image scale to obtain physical measurements.':'No suitable candidates or gaps were detected for some measurements.';
+  const value=assessment.validated?assessment.road_quality_index:null;
+  const isScene=result.capture_type==='road_scene';
+  const methodLabels={experimental_heuristic:'Experimental heuristic',trained_random_forest:'Trained random forest',insufficient_visual_detail:'Insufficient visual detail',unsuitable_capture:'Capture not suitable for scoring',no_trained_model:'No trained condition model',invalid_model_output:'Invalid model output'};
+  const unavailable=isScene?'Use a road-only rectified surface crop and a measured mm/pixel scale for physical aggregate measurements.':physical.area_sq_ft===null?'Add a valid original-image scale to obtain physical measurements.':'No suitable candidates or gaps were detected for some measurements.';
   return <div className="results-stack">
+    <section className="panel"><PanelTitle title="Road texture & aggregate candidates"/>{result.analysis_region&&<p className="fine-print">Selected road region · {integer(result.analysis_region.processed_pixel_count)} analyzed pixels · {percent(result.analysis_region.image_fraction)} of capture. Scenery outside the road is excluded.</p>}<div className="measurement-grid">
+      <><Metric label="Detected chip candidates" value={integer(result.chip_candidate_count)}/>
+      <Metric label="Visible chip coverage" value={percent(result.features.chip_coverage_fraction)}/>
+      <Metric label="Spatial coverage uniformity" value={percent(result.features.packing_uniformity)}/>
+      <Metric label="Potential dark linear area" value={percent(result.features.dark_linear_fraction)}/></>
+      {isScene&&<><Metric label="Mean image brightness" value={percent(result.features.brightness_mean)}/><Metric label="Image detail proxy" value={number(result.features.laplacian_variance)}/><Metric label="Dark image area" value={percent(result.features.dark_region_fraction)}/></>}
+    </div><p className="fine-print">These are API-computed candidates inside the selected road polygon, not verified individual stones. Perspective scenes cannot resolve aggregate uniformly: candidates may include patches, reflections or larger regions, rather than individual stones. Use a sharp close-up for chip sizing. Dark regions may include shadows and joints.</p></section>
     <section className="assessment-card">
       <div className="assessment-heading"><span className="eyebrow">{demo?'SYNTHETIC EXAMPLE':'SURFACE ASSESSMENT'}</span><Badge tone="dark-soft">{assessment.validated?'API validation flag: true':'Experimental · unvalidated'}</Badge></div>
       <div className="assessment-score"><strong>{value===null?'—':number(value,1)}</strong><span>{value===null?'Unable to assess':'out of 100'}<Badge tone={assessment.band}>{value===null?'Unable to assess':assessment.band}</Badge></span></div>
-      <div className="score-scale" aria-hidden="true">{value!==null&&<span style={{left:value+'%'}}/>}</div><div className="scale-labels"><span>0 · Poor</span><span>50 · Fair</span><span>75 · Good</span><span>100</span></div>
-      <p>{assessment.interpretation}</p><div className="assessment-method"><Icon name="flask" size={15}/>{methodLabels[assessment.method]}<span>{result.feature_version}</span></div>
+      {value!==null&&<><div className="score-scale" aria-hidden="true">{value!==null&&<span style={{left:value+'%'}}/>}</div><div className="scale-labels"><span>0 · Poor</span><span>50 · Fair</span><span>75 · Good</span><span>100</span></div></>}
+      <p>{assessment.interpretation}</p>{assessment.visual_proxy_index!=null&&<details><summary>Diagnostic texture index: {number(assessment.visual_proxy_index,1)} / 100</summary><p className="fine-print">This is an unvalidated image descriptor, with no condition label. It is neither model confidence nor measured road health. Shadows and crop selection can change it.</p></details>}<div className="assessment-method"><Icon name="flask" size={15}/>{methodLabels[assessment.method]}<span>{result.feature_version}</span></div>
     </section>
-    <section className="panel"><PanelTitle title="Surface measurements"/><div className="measurement-grid">
-      <Metric label="Detected chip candidates" value={integer(result.chip_candidate_count)}/>
-      <Metric label="Visible chip coverage" value={percent(result.features.chip_coverage_fraction)}/>
-      <Metric label="Spatial coverage uniformity" value={percent(result.features.packing_uniformity)}/>
-      <Metric label="Potential dark linear area" value={percent(result.features.dark_linear_fraction)}/>
-    </div><p className="fine-print">Visible coverage is not volumetric compaction. Dark regions can include shadows, joints, and aggregate boundaries.</p></section>
+
     <section className="panel"><PanelTitle title="Calibrated measurements"/><div className="measurement-grid">
       <Metric label="Original crop area" value={number(physical.area_sq_ft)} unit={physical.area_sq_ft===null?'':'ft²'}/>
       <Metric label="Candidate density" value={number(physical.chip_candidates_per_sq_ft)} unit={physical.chip_candidates_per_sq_ft===null?'':'candidates/ft²'}/>

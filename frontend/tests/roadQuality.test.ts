@@ -21,7 +21,7 @@ describe('multipart API client',()=>{
     const [url,init]=fetchMock.mock.calls[0];
     expect(url).toBe('/api/analyze');
     expect(init.headers).toBeUndefined();
-    expect([...init.body.keys()].sort()).toEqual(['image','include_overlay','pitch_degrees']);
+    expect([...init.body.keys()].sort()).toEqual(['capture_type','image','include_overlay','pitch_degrees']);
     expect(init.body.get('pitch_degrees')).toBe('0');
     expect(init.body.get('include_overlay')).toBe('false');
   });

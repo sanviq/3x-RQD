@@ -3,6 +3,9 @@ import { segments, score, conditionClass, band } from '../data/demo';
 import type { Weights } from '../types/api';
 import { Icon } from './Icon';
 export function NetworkMap({weights,selected,onSelect,repaired=[],filter='All',compact=false}:{weights:Weights;selected:string;onSelect:(id:string)=>void;repaired?:string[];filter?:string;compact?:boolean}) {
+  const vertices=new Map<string,Set<string>>();
+  for(const road of segments)for(const point of road.points.split(' ')){if(!vertices.has(point))vertices.set(point,new Set());vertices.get(point)!.add(road.id)}
+  const junctions=[...vertices].filter(([,ids])=>ids.size>1);
   const [zoom,setZoom]=useState(1);
   const [labels,setLabels]=useState(true);
   const visible=segments.filter(x=>filter==='All'||band(score(x,weights,repaired.includes(x.id)))===filter);
@@ -24,6 +27,7 @@ export function NetworkMap({weights,selected,onSelect,repaired=[],filter='All',c
             {labels&&<text x={segment.label[0]} y={segment.label[1]} textAnchor="middle" className="map-label" pointerEvents="none">{segment.id.replace('RH-','S')}</text>}
           </g>
         })}
+        {junctions.map(([point,roads])=>{const [x,y]=point.split(',').map(Number);return <g key={point}><circle cx={x} cy={y} r={4/zoom} fill="#fffdf4" stroke="#6d6659" strokeWidth={1.3/zoom}/><title>{roads.size} connected sample segments: {[...roads].join(', ')}</title></g>})}
         <g transform="translate(82 218)"><circle r="11" fill="#fffdf6"/><circle r="5" fill="#44342b"/></g>
       </g>
     </svg>

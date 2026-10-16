@@ -1,9 +1,16 @@
+import { isDefectDetection } from './defects';
 import { featureNames } from '../types/api';
 import type { AnalysisInput, AnalysisResponse, HealthResponse } from '../types/api';
 import { request, ApiError, isRecord, finiteNumber } from './client';
 
 export function isAnalysisResponse(value: unknown): value is AnalysisResponse {
   if (!isRecord(value)) return false;
+  if(value.defect_detection!==undefined&&!isDefectDetection(value.defect_detection))return false;
+  if(value.analysis_region!==undefined){
+    const r=value.analysis_region;
+    if(!isRecord(r)||!Number.isInteger(r.processed_pixel_count)||Number(r.processed_pixel_count)<=0||!finiteNumber(r.image_fraction)||r.image_fraction<=0||r.image_fraction>1||!['selected_road','full_image'].includes(String(r.scope)))return false;
+    if(r.road_quad!==null&&(!Array.isArray(r.road_quad)||r.road_quad.length!==4||!r.road_quad.every(p=>isRecord(p)&&finiteNumber(p.x)&&finiteNumber(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1)))return false;
+  }
   const { features, physical_measurements: physical, image, assessment, inclination } = value;
   if (!isRecord(features) || !featureNames.every(key => finiteNumber(features[key]))) return false;
   if (!isRecord(physical) || !['area_sq_ft', 'chip_candidates_per_sq_ft', 'mean_chip_diameter_mm', 'mean_chip_gap_mm_proxy']
@@ -13,8 +20,12 @@ export function isAnalysisResponse(value: unknown): value is AnalysisResponse {
   if (!isRecord(assessment) || !(assessment.road_quality_index === null ||
     (finiteNumber(assessment.road_quality_index) && assessment.road_quality_index >= 0 && assessment.road_quality_index <= 100))) return false;
   if (!['good', 'fair', 'poor', 'unassessable'].includes(String(assessment.band)) ||
-    !['experimental_heuristic', 'trained_random_forest', 'insufficient_visual_detail'].includes(String(assessment.method)) ||
+    !['experimental_heuristic', 'trained_random_forest', 'insufficient_visual_detail', 'unsuitable_capture', 'no_trained_model', 'invalid_model_output'].includes(String(assessment.method)) ||
     typeof assessment.scale !== 'string' || typeof assessment.validated !== 'boolean' || typeof assessment.interpretation !== 'string') return false;
+  if (value.capture_type !== undefined && !['road_scene', 'surface_crop'].includes(String(value.capture_type))) return false;
+  if (assessment.visual_proxy_index !== undefined && assessment.visual_proxy_index !== null &&
+    !(finiteNumber(assessment.visual_proxy_index) && assessment.visual_proxy_index >= 0 && assessment.visual_proxy_index <= 100)) return false;
+  if (assessment.reasons !== undefined && !(Array.isArray(assessment.reasons) && assessment.reasons.every(x => typeof x === 'string'))) return false;
   if (!isRecord(inclination) || !(inclination.degrees === null || finiteNumber(inclination.degrees)) ||
     !['user_supplied_sensor', 'unavailable'].includes(String(inclination.source))) return false;
   return Number.isInteger(value.chip_candidate_count) && Number(value.chip_candidate_count) >= 0 &&
@@ -33,10 +44,21 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
 export async function analyzeRoad(input: AnalysisInput, signal?: AbortSignal): Promise<AnalysisResponse> {
   const body = new FormData();
   body.append('image', input.image);
+  body.append('capture_type', input.captureType ?? 'road_scene');
+  if(input.roadQuad)body.append('road_quad',JSON.stringify(input.roadQuad));
   if (input.mmPerPixel !== undefined) body.append('mm_per_pixel', String(input.mmPerPixel));
   if (input.pitchDegrees !== undefined) body.append('pitch_degrees', String(input.pitchDegrees));
   body.append('include_overlay', String(input.includeOverlay));
   const value = await request('/analyze', { method: 'POST', body, signal });
   if (!isAnalysisResponse(value)) throw new ApiError('The service returned an incomplete or incompatible analysis result. Check the backend version.');
+  value.capture_type ??= input.captureType ?? 'road_scene';
+  // Never present an unvalidated proxy from an older server as a health grade.
+  if (!value.assessment.validated && value.assessment.road_quality_index !== null) {
+    value.reported_assessment = { ...value.assessment };
+    value.warnings = [...value.warnings, 'The server reported an unvalidated condition grade. Its original assessment is retained in reported_assessment; the grade is withheld from the interface.'];
+    value.assessment = { ...value.assessment, visual_proxy_index: value.assessment.road_quality_index,
+      road_quality_index: null, band: 'unassessable',
+      interpretation: 'Unvalidated diagnostic index only. No supported road-health verdict or confidence is available.' };
+  }
   return value;
 }
