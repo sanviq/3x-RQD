@@ -1,5 +1,19 @@
 # Precision tuning
 
+## Project target and refinement sequence
+
+The agreed target is **90% detection precision** at class-correct IoU >= 0.50, with recall, F1, mAP and per-class support reported alongside it. This is a target, not a measured result or a claim of 90% road-health accuracy.
+
+1. Finish the current 50-epoch run and preserve its best checkpoint and complete logs.
+2. Use validation predictions to diagnose class-specific false positives, missed small defects, localization errors and annotation problems. Select changes on validation data only.
+3. Refine training labels/examples and test controlled changes to sampling, resolution, augmentation or model capacity. Preserve originals, keep related images together, and record each experiment rather than changing many settings without a comparison.
+4. Choose the model and operating threshold on validation data. Track whether the 90% target is attainable and how many defects remain missed; the existing 30% recall floor is not a deployment-quality claim.
+5. Freeze the selected pipeline, then confirm performance against a matched baseline on an independent holdout. Once a holdout has informed further changes, it cannot provide a fresh final confirmation for those changes; reserve new independent groups for that confirmation.
+
+The running supervisor completes its existing approved evaluation and activation protocol. It does not automatically launch repeated refinement training. Its existing prototype activation gates are separate from the 90% project target; passing them must not be reported as reaching 90%.
+
+## Validation profile
+
 The profile also reports 50%, 70%, 80% and 90% precision targets. Each target chooses the highest recall available on the threshold grid while requiring at least 30% recall. An unattainable target is null, not a promised result. Thirty percent recall is a prototype reporting floor, not a satisfactory inspection completeness standard.
 
 Precision is the fraction of reported detections that match annotations at IoU >= 0.50 and the correct damage class. Raising confidence can reduce false positives, but also misses more defects. It does not increase mAP or establish physical road-health accuracy.
