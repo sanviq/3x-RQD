@@ -134,7 +134,7 @@ These results support an improvement on this internal test. They do **not** esta
 
 </details>
 
-The follow-up experiment uses **YOLOv8s**, initialized from official pretrained weights, for up to 50 epochs at 768 px. A completed validation-only 1024 px trial performed worse and was rejected. This refinement does not re-evaluate the previously exposed test or activate a model without fresh confirmation. [Experiment protocol](MODEL_IMPROVEMENT.md#follow-up-yolov8s-experiment).
+The longer **YOLOv8s follow-up was stopped to meet the project deadline**; its partial checkpoints are preserved. The completed YOLOv8n model and the measured results above remain the baseline. A validation-only 1024 px trial performed worse and was rejected. Fast postprocessing checks use saved validation predictions, without retraining or reusing the exposed test. [Experiment protocol](MODEL_IMPROVEMENT.md#follow-up-yolov8s-experiment).
 
 - [Measured reports and activation decision](docs/datasets/results/improvement-v2/README.md)
 - [Checkpoint, dataset, and evaluation evidence](https://github.com/sanviq/3x-RQD/releases/tag/rdd2022-improvement-v2)

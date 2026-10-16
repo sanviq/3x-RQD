@@ -10,6 +10,8 @@ The [measured reports](docs/datasets/results/improvement-v2/README.md) and [rele
 
 ## Follow-up YOLOv8s experiment
 
+**Stopped for the project deadline.** No YOLOv8s training is currently running. Partial weights are preserved, and its early-epoch metrics do not replace the completed v2 detector results. The configuration below records the attempted experiment; rerunning it starts an expensive job and is not needed to launch the application.
+
 A validation-only trial of the same frozen v2 checkpoint at 1024 px reduced precision from 60.0% to 53.0%, recall from 24.2% to 23.6% and mAP@.50 from 33.4% to 30.4%. That setting was rejected. See [the reproducible comparison](docs/datasets/results/precision-refinement-v3/resolution-check.json).
 
 The next bounded experiment trains **YOLOv8s** from official generic pretrained weights on the same 2,851 training images, with the same 803-image validation split. It uses up to 50 epochs, 768 px, batch 1, AdamW learning rate .001, seed 42, mosaic .5, scale .3, rotation 2 degrees and patience 15. Capacity and initialization differ from the nano warm start, so the experiment does not isolate a single causal factor.
