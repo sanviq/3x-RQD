@@ -37,8 +37,14 @@ def precision_profile(records, *, split, checkpoint_sha256):
     eligible=[s for s in sweep if s['precision'] is not None and s['precision']>=.5
               and s['recall'] is not None and s['recall']>=.3]
     selected=max(eligible,key=lambda s:(s['precision'],s['recall'],-s['confidence'])) if eligible else None
+    targets={}
+    for target in (.5,.7,.8,.9):
+        candidates=[s for s in sweep if s['precision'] is not None and s['precision']>=target
+                    and s['recall'] is not None and s['recall']>=.3]
+        targets[f'{target:.2f}']=max(candidates,key=lambda s:(s['recall'],s['precision'],-s['confidence'])) if candidates else None
     return dict(split=split,checkpoint_sha256=checkpoint_sha256,threshold_sweep=sweep,
                 precision_priority_operating_point=selected,
+                precision_targets_with_recall_floor=targets,
                 selection_constraints=dict(minimum_precision=.5,minimum_recall=.3),
                 notice='Validation recommendation only; not automatically activated. Highest precision on a 0.01 grid subject to recall >= .30 and precision >= .50. Null means no eligible setting. Per-class misses remain visible. Filtering does not improve mAP or prove field accuracy; verify a frozen policy on held-out data before activation.')
 
