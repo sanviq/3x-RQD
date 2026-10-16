@@ -1,0 +1,16 @@
+{
+  "enabled": false,
+  "validation_passed": false,
+  "test_passed": false,
+  "improved_on_fresh_test": true,
+  "checkpoint_sha256": "56b7de26050d65e52d090a6ea914c21c028544474e9125ed33cac45ed03803a3",
+  "confidence": 0.35,
+  "imgsz": 768,
+  "gates": {
+    "precision": 0.5,
+    "recall": 0.3,
+    "map50": 0.3,
+    "class_ap50": 0.1
+  },
+  "notice": "Internal prototype detection gate, not field validation or validation of road-health severity, scores or simulation."
+}

@@ -1,0 +1,120 @@
+{
+  "split": "test",
+  "checkpoint_sha256": "56b7de26050d65e52d090a6ea914c21c028544474e9125ed33cac45ed03803a3",
+  "dataset_manifest_sha256": "1293464c1a1c510fe42f798dfed2c40e3a44960499caa017ec990b9e6298fdaa",
+  "images": 511,
+  "ultralytics_metrics": {
+    "metrics/precision(B)": 0.45007663338913,
+    "metrics/recall(B)": 0.3267309683294128,
+    "metrics/mAP50(B)": 0.3239713319419177,
+    "metrics/mAP50-95(B)": 0.12555045987970775,
+    "fitness": 0.12555045987970775
+  },
+  "per_class_metrics": {
+    "D00": {
+      "precision": 0.4807126001749685,
+      "recall": 0.2967581047381546,
+      "f1": 0.36697295280756503,
+      "map50": 0.29130608780283895,
+      "map50_95": 0.12171203665532451
+    },
+    "D10": {
+      "precision": 0.39453893986691146,
+      "recall": 0.29605263157894735,
+      "f1": 0.3382731450469909,
+      "map50": 0.25972529377702896,
+      "map50_95": 0.08216251132260369
+    },
+    "D20": {
+      "precision": 0.5146525589891463,
+      "recall": 0.4064208293082414,
+      "f1": 0.45417775062771437,
+      "map50": 0.4422988991786945,
+      "map50_95": 0.18649997293644127
+    },
+    "D40": {
+      "precision": 0.410402434525494,
+      "recall": 0.3076923076923077,
+      "f1": 0.35170198230859573,
+      "map50": 0.30255504700910824,
+      "map50_95": 0.11182731860446145
+    }
+  },
+  "class_distribution": {
+    "D00": 401,
+    "D10": 152,
+    "D20": 287,
+    "D40": 234
+  },
+  "country_view_diagnostics": {
+    "India": {
+      "images": 200,
+      "tp": 106,
+      "fp": 64,
+      "fn": 278,
+      "precision": 0.6235294117647059,
+      "recall": 0.2760416666666667,
+      "f1": 0.3826714801444043
+    },
+    "Japan": {
+      "images": 200,
+      "tp": 117,
+      "fp": 104,
+      "fn": 269,
+      "precision": 0.5294117647058824,
+      "recall": 0.30310880829015546,
+      "f1": 0.38550247116968694
+    },
+    "Norway": {
+      "images": 107,
+      "tp": 44,
+      "fp": 15,
+      "fn": 250,
+      "precision": 0.7457627118644068,
+      "recall": 0.14965986394557823,
+      "f1": 0.2492917847025496
+    },
+    "United_States": {
+      "images": 4,
+      "tp": 3,
+      "fp": 3,
+      "fn": 7,
+      "precision": 0.5,
+      "recall": 0.3,
+      "f1": 0.37499999999999994
+    }
+  },
+  "diagnostic": {
+    "confidence": 0.35,
+    "iou": 0.5,
+    "precision": 0.5921052631578947,
+    "recall": 0.25139664804469275,
+    "f1": 0.3529411764705882,
+    "tp": 270,
+    "fp": 186,
+    "fn": 804,
+    "per_class_counts": {
+      "D00": {
+        "tp": 82,
+        "fp": 54,
+        "fn": 319
+      },
+      "D10": {
+        "tp": 28,
+        "fp": 27,
+        "fn": 124
+      },
+      "D20": {
+        "tp": 103,
+        "fp": 66,
+        "fn": 184
+      },
+      "D40": {
+        "tp": 57,
+        "fp": 39,
+        "fn": 177
+      }
+    }
+  },
+  "notice": "Internal labelled holdout; not official challenge test accuracy. Ultralytics P/R use its operating-point convention; diagnostic P/R use the explicit threshold. No model improvement claim without a matched held-out baseline comparison."
+}
