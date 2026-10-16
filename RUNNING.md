@@ -5,7 +5,7 @@
 Use Python 3.11/3.12 and Node 24 LTS (or Node 22.18+). The repository root contains app/, requirements.txt, dev.mjs and the React frontend/ folder.
 
 ~~~powershell
-cd "C:\Users\Umesh Krishnaswamy\Downloads\road-health\frontend"
+cd "C:\path\to\3x-RQD"
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 cd frontend

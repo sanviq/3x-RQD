@@ -1,160 +1,212 @@
-# Road Health — local application
+# Road Health · 3x-RQD
 
-The active dashboard is the team's React/TypeScript application in `frontend/`. FastAPI provides granular analysis, an optional road-defect detector, tracking, assessment, repair planning, local GPS survey records, a mesh API, simulation and evaluation.
+A road-inspection and maintenance prototype for government officers. Inspect road images, review possible damage, save GPS-linked surveys, and compare repair scenarios.
 
-Start locally from this folder:
+The application uses the team's **React + TypeScript frontend** in `frontend/` and a **Python + FastAPI backend** in `app/`. The road-damage detector is trained separately using real RDD2022 images.
+
+[Visual tour](#a-quick-look-inside) · [Run locally](#run-locally) · [Using the app](#using-the-app) · [Model results](#current-detector-results) · [Dataset](#dataset-and-training) · [Documentation](#documentation)
+
+[![Road Health demo dashboard showing sample inspection coverage and road priorities](docs/images/overview-demo.jpg)](docs/images/overview-demo.jpg)
+*The team's real interface, running locally. The overview above uses clearly labelled demonstration roads and illustrative scores.*
+
+## A quick look inside
+
+### Find the roads that need attention
+
+Explore connected segments, inspect their condition profile, and move from the map to a repair scenario. **This screenshot uses the sample network; its boxes, confidence values, and scores are fixtures.** Live surveys use records your team explicitly saves or imports.
+
+![Sample road network and synthetic defect inspection panel](docs/images/network-demo.jpg)
+
+### See the real data behind the detector
+
+The dataset explorer contains attributed RDD2022 training examples. Its green boxes are **human ground-truth annotations**, not model predictions. Select a country/capture subset and inspect its original class labels before running analysis.
+
+<p>
+  <img src="data/examples/rdd2022/India_India_000115.jpg" width="31%" alt="Real RDD2022 training road image from India">
+  <img src="data/examples/rdd2022/Norway_Norway_000009.jpg" width="31%" alt="Real RDD2022 training road image from Norway">
+  <img src="data/examples/rdd2022/Japan_Japan_000000.jpg" width="31%" alt="Real RDD2022 training road image from Japan">
+</p>
+
+*India · Norway · Japan, left to right. These are dataset preview photographs, not detector outputs.*
+
+<details>
+<summary>Open the dataset explorer screenshot with human annotation boxes</summary>
+
+![Real Indian RDD2022 training photograph with human-labelled crack and pothole boxes](docs/images/rdd2022-human-annotations.jpg)
+
+</details>
+
+*Road photograph: RDD2022 dataset authors, [CC BY 4.0](https://figshare.com/articles/dataset/21431547). The app displays a resized preview; original XML is preserved.*
+
+### Drive it, repair it, compare it
+
+The wheel camera shows the tire and suspension responding to annotated road relief. Select repairs and repeat the same route to compare the simulated response. **Road dimensions, defect depths, and vehicle behaviour in this view are assumptions, not measured telemetry.**
+
+![Synthetic wheel-level driving simulation with adjustable road and vehicle assumptions](docs/images/driving-simulation.jpg)
+
+[Try the walkthrough](#using-the-app) · [Understand the model results](#current-detector-results)
+
+## Run locally
+
+Requirements: **Python 3.11 or 3.12**, **Node.js 22.18+**, npm, and Git. The basic application needs no training dataset, GPU, API key, or cloud account.
+
+### macOS / Linux
+
+From the repository root:
 
 ```sh
 ./scripts/start-local.sh
 ```
 
-Open http://127.0.0.1:8000 (API docs: http://127.0.0.1:8000/docs). Demo mode works without a training dataset. For real detections, install optional dependencies and configure trusted road-specific weights. The startup script does not push code or publish the application.
+The script creates `.venv-roadhealth` if needed, installs dependencies for a new environment, installs frontend dependencies, builds the team's frontend, and starts FastAPI.
 
-See [local integration, API, model setup and limitations](docs/IMPLEMENTATION.md). The original surface-analysis endpoint and its calibration contract are preserved below.
+- **Application:** http://127.0.0.1:8000
+- **Interactive API documentation:** http://127.0.0.1:8000/docs
+- Stop the server with **Ctrl+C**. If port 8000 is already in use, use the existing local server or stop it before launching another.
 
-For detector development, see [RDD2022 provenance, team download, preparation, training and evaluation](docs/datasets/README.md). The repository includes a tiny attributed real-data gallery; the compact training dataset and checkpoints are GitHub Release assets. See [the compact multinational workflow](docs/datasets/COMPACT.md). Downloading data does not replace demo mode with a trained detector.
-
----
-
-# Road Quality Measurement — backend starter
-
-Python/FastAPI backend for close-up road-surface analysis. Upload a road crop to
-obtain aggregate-chip candidates, texture/boundary/spacing proxies, optional
-physical measurements, and diagnostic image descriptors. No road-health grade
-is issued without a validated condition model.
-The repository includes an attributed RDD2022 example gallery. Detector checkpoints and compact training data are distributed as release assets; they are not silently loaded by the granular surface-analysis endpoint.
-
-## Full application
-
-See [RUNNING.md](RUNNING.md) for Windows setup, launching both services with `node dev.mjs`, uploaded-photo driving, repairs, weather effects and verification status. Use Python 3.11/3.12 and Node 24 LTS (or 22.18+). The existing backend setup below is also supported.
-
-## Setup and run
-
-Requires Python 3.10+ (Python 3.11 or 3.12 recommended).
+If an existing Python environment is missing dependencies:
 
 ```sh
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+.venv-roadhealth/bin/python -m pip install -r requirements-dev.txt
 ```
 
-Open http://127.0.0.1:8000/docs for an interactive upload/testing interface.
-`GET /health` reports whether a locally trained model is loaded.
+### Windows (PowerShell)
+
+Open a terminal in the repository root—the folder containing `app/`, `frontend/`, and `dev.mjs`:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+npm --prefix frontend ci
+node dev.mjs
+```
+
+Python 3.11 is also supported; adjust the launcher version if needed.
+
+Open **http://127.0.0.1:5173**. The helper starts the API on port 8000 and the frontend on port 5173. Ctrl+C stops both.
+
+### Development with live reload
+
+After installing dependencies, run `node dev.mjs` from the repository root on either platform. It uses `.venv-roadhealth` when available, otherwise `.venv`. Vite forwards `/api` requests to FastAPI.
+
+For separate terminals, proxy configuration, and troubleshooting, see [RUNNING.md](RUNNING.md).
+
+## Using the app
+
+1. **Explore Demo mode.** The overview, map, charts, and repair planner use clearly labelled sample roads. These are examples, not real survey results.
+2. **Open Surface inspection.** Upload an image, choose a video reference frame, or capture a camera image. Review the original image, detected candidates, bounding boxes, and confidence. Align the road footprint before using the simulation.
+3. **Review detections.** Reject false positives. Without an accepted YOLO checkpoint, the default inspection workflow uses experimental OpenCV candidates; these are not validated model predictions. The advanced detector workspace also offers explicit demo annotations.
+4. **Save a real survey in Live mode.** Supply the actual location and save the inspection, or use **Import GPS inspections → Preview → Save** to import your team's JSON records. Existing records are preserved. GPS is supplied by the user, not recovered from RDD2022 photos.
+5. **Compare repair scenarios.** In Scenario lab, drive the original road, select repairs, and drive the same route again. Compare simulated suspension response, remaining defects, repair costs, and synthetic weather changes.
+6. **Check Model evaluation.** Genuine detector reports are separated from illustrative charts. The local training status appears when a job is registered.
+
+### Main workflows
+
+- **Inspection:** road-defect candidates, original-image coordinates, class/confidence, review controls, image-quality checks, and optional scale-reference calibration.
+- **Road network:** GeoJSON connectivity, capture assignment, saved GPS survey records, and segment-level summaries.
+- **Repair planning:** configurable budgets, ranked recommendations, selected repairs, and explicit cost assumptions.
+- **Scenario lab:** photo-based 3D driving, adjustable vehicle parameters, repair/deterioration comparisons, repair-photo previews, and synthetic weather tests.
+- **Surface and material assessment:** texture/aggregate descriptors and separate user-supplied material test inputs.
+- **Evaluation:** measured internal detection results, PR/confusion evidence in downloadable artifacts, calibration comparisons, and labelled demonstration charts.
+
+The **Provisional Road Quality Score** is a configurable observed-defect index. It is separate from detection confidence and is **not** a validated engineering condition grade. See [the score definition and limitations](ROAD_QUALITY_SCORE.md).
+
+## Current detector results
+
+The expanded **YOLOv8n** experiment completed **50 additional fine-tuning epochs**. The saved best checkpoint was compared with the previous pipeline on the **same 511 held-out images**.
+
+At confidence **0.35** and class-correct bounding-box IoU **≥ 0.50**:
+
+- **Precision:** 53.8% → **59.2%**.
+- **Recall:** 13.1% → **25.1%**.
+- **mAP@0.50:** 24.5% → **32.4%**.
+
+These results support an improvement on this internal test. They do **not** establish field accuracy, national road-quality rankings, or reliable road-health scores. The old pipeline used 640 px inference and the candidate used 768 px; the comparison is between complete pipelines.
+
+**Status: experimental; automatic activation disabled.** The model failed the recall requirement. **90% precision remains a project target**, with recall and per-class results reported alongside it. Increasing the confidence cutoff can hide most defects, so a high precision number alone is not success.
+
+<details>
+<summary><strong>See the measured results in the application</strong></summary>
+
+![Model evaluation screen with real validation and held-out results, separated from current training progress](docs/images/model-evaluation.jpg)
+
+*Recorded expanded YOLOv8n results. Training progress changes as follow-up experiments run; the published baseline comparison remains separate.*
+
+</details>
+
+The follow-up experiment uses **YOLOv8s**, initialized from official pretrained weights, for up to 50 epochs at 768 px. A completed validation-only 1024 px trial performed worse and was rejected. This refinement does not re-evaluate the previously exposed test or activate a model without fresh confirmation. [Experiment protocol](MODEL_IMPROVEMENT.md#follow-up-yolov8s-experiment).
+
+- [Measured reports and activation decision](docs/datasets/results/improvement-v2/README.md)
+- [Checkpoint, dataset, and evaluation evidence](https://github.com/sanviq/3x-RQD/releases/tag/rdd2022-improvement-v2)
+- [Precision target and refinement method](docs/PRECISION_TUNING.md)
+
+Check **Model evaluation** or `/api/research/training-status` for the current local experiment. Experiment results are not automatically promoted to the live detector.
+
+## Dataset and training
+
+The primary dataset is [RDD2022, released through CRDDC2022](https://figshare.com/articles/dataset/21431547), attributed to its authors under **CC BY 4.0**. Original Pascal VOC XML annotations are retained and valid boxes are converted to YOLO labels.
+
+The model's four class IDs are:
+
+- `0` · **D00:** longitudinal crack.
+- `1` · **D10:** transverse crack.
+- `2` · **D20:** alligator crack.
+- `3` · **D40:** pothole.
+
+The expanded subset contains **5,250 genuine image/XML pairs**: 750 each from China Drone, China MotorBike, Czech, India, Japan, Norway, and United States. These are seven capture subsets across six countries; Indian state coverage is unknown.
+
+After protections against previously exposed or related images crossing splits, **4,165 images** were retained: **2,851 train / 803 validation / 511 test**. This is a compact, class-enriched development sample, not a representative survey of every country.
+
+The selected-original archive is approximately **1.28 GB**, rather than the complete 12+ GB release. Large datasets and weights live in **GitHub Releases**, outside Git history and the frontend bundle. The repository contains source code, small attributed examples, audit summaries, and measured reports. Running the website does not load the training dataset.
+
+To reproduce data preparation, training, resuming, and evaluation, use:
+
+- [Dataset source, class mapping, and preparation](docs/datasets/README.md)
+- [Expanded experiment settings and integration](MODEL_IMPROVEMENT.md)
+- [Compact dataset workflow](docs/datasets/COMPACT.md)
+
+Fine-tuning uses trusted pretrained detection weights, configurable image size/batch/epochs/learning rate/seed, and separate best/resume checkpoints. Selection uses validation data. Final confirmation requires an independent holdout; previously inspected test results must not become tuning data while still being called an untouched test.
+
+## Evidence and limitations
+
+- **Demo, measured, estimated, and simulated results are distinct.** Sample roads and synthetic charts are labelled.
+- **No detections does not mean a healthy road.** Insufficient model evidence requires review or repeat capture.
+- **Boxes are not segmentation masks.** RDD2022 box annotations do not validate exact damaged pixel area or a 3D defect shape.
+- **Physical measurements require calibration or sensors.** Ordinary photos do not verify defect depth, road slope, friction, binder adhesion, water resistance, or material composition.
+- **Simulation is illustrative.** Vehicle parameters, deterioration, repair outcomes, and costs are assumptions unless independent measurements are supplied. Synthetic rain/glare tests do not prove real-weather robustness.
+- **Country comparisons describe the sample.** Camera view, resolution, class mix, and annotation patterns can be compared; national road-quality claims need representative GPS-linked surveys and supporting data.
+
+## Project layout
+
+- `frontend/` — the team's React/TypeScript interface, driving simulation, and browser tests.
+- `app/` — FastAPI analysis, detection adapters, scoring, local storage, and APIs.
+- `tools/` — dataset collection/auditing, preparation, detector evaluation, and experiment utilities.
+- `tests/` — backend, calibration, detection-contract, and dataset-pipeline tests.
+- `docs/` — implementation notes, data provenance, audits, and measured reports.
+- `scripts/start-local.sh` / `dev.mjs` — local launch helpers.
+
+## Checks
+
+Run from the repository root after installing development dependencies:
 
 ```sh
-curl -X POST http://127.0.0.1:8000/analyze \
-  -F 'image=@/absolute/path/road.jpg' \
-  -F 'capture_type=surface_crop' \
-  -F 'mm_per_pixel=0.5' \
-  -F 'include_overlay=true'
+.venv-roadhealth/bin/python -m pytest -q
+npm --prefix frontend test
+npm --prefix frontend run lint
+npm --prefix frontend run build
 ```
 
-`mm_per_pixel` is optional and refers to the **original image** after EXIF
-orientation. Supply it only for a top-down or rectified image with a uniform
-known scale, e.g. 100 mm reference spanning 200 pixels gives 0.5 mm/pixel.
-Physical outputs are null without calibration. Count per square foot is the
-detected count divided by the entire crop area in square feet; it is a density
-estimate, not a count in a separately sampled one-square-foot window. Cropped
-edge chips are excluded, causing some density undercount. Maximum upload is
-12 MiB and 20 megapixels; supported formats are JPEG, PNG and WebP.
+On Windows, use `.\.venv\Scripts\python.exe -m pytest -q` for the backend command. Passing software tests verifies implementation behavior, not real-road detection accuracy.
 
-Optional `pitch_degrees` records a user-supplied calibrated sensor measurement;
-the API does not infer slope from a single photo. Pitch is not used in scoring.
-`include_overlay=true` returns a base64 PNG: green candidate boundaries, red
-potential dark linear distress. The React workspace is in `frontend/`; Swagger `/docs` is available for API inspection. No uploaded images are stored.
+## Documentation
 
-## Features and method
-
-- Grayscale, Gaussian smoothing, CLAHE, Otsu threshold, distance transform and
-  marker-controlled watershed produce approximate bright chip candidates.
-- Candidate count, visible coverage, equivalent diameter/variation, circularity,
-  nearest-center equivalent-circle gap, and 4×4 spatial coverage uniformity
-  describe size and apparent packing.
-- Boundary edge support and gradient contrast describe boundary visibility.
-- GLCM contrast/homogeneity, entropy, brightness and Laplacian variance describe
-  texture, illumination and image detail.
-- Black-hat morphology plus elongated-component filtering estimates dark linear
-  regions; dark area fraction is another appearance proxy.
-
-Pixel features refer to a crop resized to a maximum side of 1024 pixels. Keep
-capture distance, resolution, illumination and surface type consistent for ML.
-Physical measurements account for resizing. `chip_coverage_fraction` is visible
-2D candidate coverage, not volumetric compaction or verified packing density.
-Gap is an equivalent-circle approximation, not measured edge-to-edge spacing.
-The unsegmented area does not identify binder/fines chemically or materially.
-
-The old formula is retained only as a diagnostic visual index:
-
-`clip(100 - [55*min(1,L/0.08) + 25*min(1,D/0.25) + 20*(1-U)], 0, 100)`
-
-L is dark linear area, D is dark area and U is candidate coverage uniformity.
-These coefficients are arbitrary and do not measure road health or confidence.
-Zero candidates now produces U=0, correcting the previous false-perfect value.
-
-With no validated model, the API returns `road_quality_index=null` and
-`band=unassessable`. A suitable surface crop can return `visual_proxy_index`;
-no good/fair/poor label is assigned. Local unvalidated regression predictions
-are also diagnostic only. `capture_type=road_scene` (the default), insufficient
-detail (brightness std <8/255 or Laplacian variance <25), extreme mean exposure
-(<25/255 or >235/255), and zero candidates withhold the diagnostic index.
-Scene captures also withhold physical aggregate measurements. Capture type is
-user-declared; this is not automatic road recognition. Feature schema is
-`surface-v3`; older weights must not be reused.
-
-## Train on your labeled images
-
-Place images under `data/images/` and create `data/labels.csv` using
-`data/labels.example.csv` as the column template (the example photos do not
-exist). Label scores 0–100 using a consistent expert rubric. Use both good and
-damaged roads: good examples alone cannot calibrate quality across the range.
-Use at least 20 images from at least 3 routes to exercise the starter, and a
-much larger representative dataset for meaningful evaluation. Group nearby
-frames and repeat visits to the same segment under the same `route_id` to
-reduce leakage; avoid duplicated photos even under different filenames.
-
-```sh
-python train.py data/labels.csv
-```
-
-The script extracts the same features, holds out entire routes, trains a random
-forest regressor, and saves `models/road_quality.joblib` with MAE/RMSE in
-`models/road_quality.metrics.json`. Only the training split is fitted. Restart
-the server to use it. The API reports `trained_random_forest`, but continues to
-report `validated=false` and expose predictions only as diagnostic indices until independent field validation is implemented.
-Load only trusted model files: joblib artifacts can execute Python code.
-
-## Tests
-
-```sh
-pip install -r requirements-dev.txt
-python -m pytest -q
-```
-
-Tests check calibration, degenerate images, upload validation and API output.
-They do not establish real-road detection accuracy. Validate segmentation against
-manually outlined chips (IoU, count error, size error), quality against expert
-ratings on unseen routes (MAE, RMSE), and repeatability across lighting/surface
-types. Cracks, potholes and binder identification need labeled masks and a
-specialized segmentation model for reliable classification. Route-distance
-aggregation and image-derived calibrated slope estimation are future work.
-
-## Research references
-
-- [FHWA surface texture guidance](https://www.fhwa.dot.gov/pavement/t504036.cfm):
-  aggregate and mortar contribute differently to asphalt/concrete texture;
-  visible texture alone is not a complete road-quality assessment.
-- [scikit-image watershed](https://scikit-image.org/docs/stable/api/skimage.segmentation.html#skimage.segmentation.watershed)
-  for separating touching candidate regions.
-- [scikit-image region measurements](https://scikit-image.org/docs/stable/api/skimage.measure.html#skimage.measure.regionprops)
-  and [GLCM texture features](https://scikit-image.org/docs/stable/api/skimage.feature.html#skimage.feature.graycomatrix).
-
-Research informs the feature choices; it does not validate the starter score.
-
-## Road defect candidates and wheel simulation
-
-POST /detect-defects returns OpenCV candidate polygons, original pixel bounding boxes, rectified-road coordinates, visual severity and uncalibrated evidence confidence. POST /analyze includes the same defect_detection object. Depth and physical dimensions remain null. The React upload workflow calls detection automatically and maps reviewed candidates into the wheel-level suspension simulation. No hardcoded sample defects are inserted for uploaded media. See DETECTION.md for documented approximations, test commands and limitations.
-
-## Integrated network and detector workflows
-
-The road-network page retains both imported GeoJSON connectivity and saved GPS survey records. Surface inspection retains the separate optional detector workspace, dataset gallery and local-save workflow, alongside automatic road-region texture analysis and wheel-level simulation. See [NETWORK_AND_ANALYSIS.md](NETWORK_AND_ANALYSIS.md).
+- [Local setup and launch](RUNNING.md)
+- [Backend integration and API contracts](docs/IMPLEMENTATION.md)
+- [GPS inspection import and sharing](docs/GPS_INSPECTION_IMPORT.md)
+- [Defect detection and geometry](DETECTION.md)
+- [Network and image analysis](NETWORK_AND_ANALYSIS.md)
+- [Scenario lab](SCENARIO_LAB.md)
+- [Repair-photo views](REPAIR_PHOTO_VIEWS.md)
+- [Weather lab](WEATHER_LAB.md)
+- [Surface-analysis backend reference](docs/SURFACE_ANALYSIS.md)
+- [Model training and integration](MODEL_IMPROVEMENT.md)
