@@ -106,3 +106,11 @@ friction and binder properties need appropriate laboratory tests.
 
 Reference geometry follows the [OpenCV calibration model](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html).
 Detector accuracy is evaluated separately using the [Ultralytics detection metrics](https://docs.ultralytics.com/guides/yolo-performance-metrics/).
+
+## Original-perspective repair illustrations
+
+For uploaded photos the three repair panels now come from POST /repair-views, using the original image and actual reviewed contour coordinates. Synthetic examples retain the rectified texture previews. The forecast assumptions and three-month/six-month/twelve-month controls are documented in [REPAIR_PHOTO_VIEWS.md](REPAIR_PHOTO_VIEWS.md). These visual predictions are independent of the simplified drive-relief model and are not engineering forecasts.
+
+### Uploaded-file weather evidence
+
+Uploaded-image Weather lab uses actual native-size API evidence, independent inference for seven conditions, original-coordinate overlays/zoom and known-annotation metrics. It does not analyze the rectified 3D texture. Sample canvas weather behavior is retained. See [WEATHER_LAB.md](WEATHER_LAB.md).

@@ -18,6 +18,7 @@ _lock = threading.Lock()
 ALIASES = {'potholes': 'pothole', 'longitudinal_crack': 'crack', 'transverse_crack': 'crack',
            'alligator_crack': 'crack', 'patch': 'repair_patch', 'raveling': 'ravelling',
            'd00': 'crack', 'd10': 'crack', 'd20': 'crack', 'd40': 'pothole',
+           'surface_wear':'ravelling','depression':'uneven_surface','patches':'repair_patch',
            'loose_stones': 'loose_chips', 'loose_rock_chips': 'loose_chips', 'metal': 'metallic_debris'}
 RDD_LABELS = {'D00': 'Longitudinal crack', 'D10': 'Transverse crack',
               'D20': 'Alligator crack', 'D40': 'Pothole'}

@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { demoResult } from '../src/data/demo';
+// Full API/photo/WebGL flows can exceed the default 30 seconds on a CPU host.
+test.setTimeout(120_000);
 test('all lab tools share geometry, matched comparisons and isolated weather',async({page,isMobile})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');if(isMobile)await page.getByRole('button',{name:'Open navigation'}).click();

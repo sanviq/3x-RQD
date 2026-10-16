@@ -198,3 +198,11 @@ sample roads. Live Overview and Saved GPS surveys include **Import GPS inspectio
 records**: choose/paste JSON, preview, then explicitly save. See
 [GPS inspection import](docs/GPS_INSPECTION_IMPORT.md) for the schema, limits,
 sharing exports with teammates and the separate GeoJSON geometry workflow.
+
+## Original-perspective repair photo views
+
+Uploaded captures now use the real photo renderer in Scenario lab → Repair & deterioration. Select repair regions, choose 3/6/12 months, and set repair quality, traffic and weather. Local Diffusers inpainting is preferred when configured; OpenCV Telea/Navier–Stokes plus sampled asphalt provides a working fallback. See [REPAIR_PHOTO_VIEWS.md](REPAIR_PHOTO_VIEWS.md) for optional setup, exact aging formulas, mask boundaries and verification.
+
+## Native weather comparison
+
+Uploaded captures now use `/weather-compare`; see [WEATHER_LAB.md](WEATHER_LAB.md) for native-resolution evidence, model availability, original-file metadata, annotation JSON and verification commands. With FastAPI on port 8000 and the current Vite preview on port 5174, open http://127.0.0.1:5174/ and select Scenario lab → Weather lab after uploading. No model weights are downloaded or activated automatically.

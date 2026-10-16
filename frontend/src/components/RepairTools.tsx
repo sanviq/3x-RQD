@@ -1,9 +1,12 @@
+import type {PhotoAssumptions} from '../api/repairPhotos';
+import {RepairPhotoViews} from './RepairPhotoViews';
+import type {RoadQuad} from '../simulation/projection';
 import { useMemo } from 'react';
 import { effectiveMarks, markArea } from '../simulation/model';
 import type { GrowthRates, Mark, RoadConfig, Scenario } from '../simulation/model';
 import { scenarioTexture } from '../simulation/image';
 import { number } from '../utils/formatters';
-interface Props {texture:HTMLCanvasElement|null;marks:Mark[];config:RoadConfig;scenario:Scenario;months:number;growth:GrowthRates;
+interface Props {photo?:{file:File;quad:RoadQuad;boxGeometry?:boolean;assumptions:PhotoAssumptions;onAssumptions:(value:PhotoAssumptions)=>void};texture:HTMLCanvasElement|null;marks:Mark[];config:RoadConfig;scenario:Scenario;months:number;growth:GrowthRates;
   onScenario:(s:Scenario)=>void;onMonths:(n:number)=>void;onGrowth:(r:GrowthRates)=>void;onAll:(value:boolean)=>void;
   busy:boolean;progress:number;error:string;onCompare:()=>void;onCancel:()=>void}
 export function RepairTools(p:Props) {
@@ -18,7 +21,7 @@ export function RepairTools(p:Props) {
       <label className="field">Depth growth (% / month)<input aria-label="Depth growth percent per month" type="number" min="0" max="10" step=".5" value={p.growth.depth*100} onChange={e=>p.onGrowth({...p.growth,depth:Math.max(0,Math.min(10,Number(e.target.value)||0))/100})}/></label>
       <label className="field">Footprint growth (% / month)<input aria-label="Footprint growth percent per month" type="number" min="0" max="5" step=".5" value={p.growth.size*100} onChange={e=>p.onGrowth({...p.growth,size:Math.max(0,Math.min(5,Number(e.target.value)||0))/100})}/></label>
     </div>
-    <div className="repair-state-grid">{states.map(s=><figure key={s.scenario}><figcaption>{s.scenario==='Deteriorated'?'After '+p.months+' months · assumed':s.scenario}</figcaption>{s.url&&<img src={s.url} alt={s.scenario+' contour-aligned road texture'}/>}<strong>{s.marks.length} active defects</strong><small>{number(s.marks.reduce((sum,m)=>sum+markArea(m,p.config),0))} m² summed footprint · {number(Math.max(0,...s.marks.map(m=>m.depthMm*m.severity)),1)} mm max assumed relief</small></figure>)}</div>
+    {p.photo?<RepairPhotoViews assumptions={p.photo.assumptions} onAssumptions={p.photo.onAssumptions} file={p.photo.file} quad={p.photo.quad} boxGeometry={p.photo.boxGeometry} marks={p.marks} months={p.months} growth={p.growth} onMonths={p.onMonths}/>:<div className="repair-state-grid">{states.map(s=><figure key={s.scenario}><figcaption>{s.scenario==='Deteriorated'?'After '+p.months+' months · assumed':s.scenario}</figcaption>{s.url&&<img src={s.url} alt={s.scenario+' contour-aligned road texture'}/>}<strong>{s.marks.length} active defects</strong><small>{number(s.marks.reduce((sum,m)=>sum+markArea(m,p.config),0))} m² summed footprint · {number(Math.max(0,...s.marks.map(m=>m.depthMm*m.severity)),1)} mm max assumed relief</small></figure>)}</div>}
     <div className="action-row"><button className="button primary" disabled={!p.texture||p.busy} onClick={p.onCompare}>{p.busy?'Comparing drives…':'Compare all three drives'}</button>{p.busy&&<button className="text-button" onClick={p.onCancel}>Cancel comparison</button>}</div>
     {p.busy&&<div className="comparison-progress" role="progressbar" aria-label="Drive comparison progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(p.progress*100)}><span style={{width:p.progress*100+'%'}}/></div>}
     {p.error&&<p className="field-error" role="alert">{p.error}</p>}

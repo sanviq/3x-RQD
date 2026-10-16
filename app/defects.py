@@ -40,12 +40,12 @@ def _overlap(a, b):
     return intersection / max(1, min(a[2]*a[3], b[2]*b[3]))
 
 
-def detect_defects(image, road_quad=None):
+def detect_defects(image, road_quad=None, *, native_resolution=False):
     q = np.asarray(parse_quad(road_quad), np.float32)
     oh, ow = image.shape[:2]
-    scale = min(1., 1024/max(ow, oh))
+    scale = 1. if native_resolution else min(1., 1024/max(ow, oh))
     w, h = round(ow*scale), round(oh*scale)
-    frame = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
+    frame = image.copy() if native_resolution else cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     smooth = cv2.GaussianBlur(gray, (3, 3), 0)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -75,7 +75,7 @@ def detect_defects(image, road_quad=None):
     for fraction in (.035, .08, .16):
         size = max(9, int(minimum*fraction) | 1)
         responses.append(cv2.morphologyEx(smooth, cv2.MORPH_BLACKHAT,
-                         cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size))))
+                         cv2.getStructuringElement(cv2.MORPH_RECT if native_resolution and size>121 else cv2.MORPH_ELLIPSE, (size, size))))
     blackhat = np.maximum.reduce(responses)
     local = cv2.GaussianBlur(smooth, (0, 0), max(3, minimum*.035)).astype(np.float32)
     dark = local - smooth.astype(np.float32)

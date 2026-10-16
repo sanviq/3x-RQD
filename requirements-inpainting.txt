@@ -1,0 +1,7 @@
+-r requirements.txt
+# Optional: only needed with a trusted local Stable Diffusion inpainting model.
+diffusers>=0.36,<0.37
+torch>=2.6,<3
+transformers>=4.45,<5
+accelerate>=1,<2
+safetensors>=0.5,<1

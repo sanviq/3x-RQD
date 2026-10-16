@@ -61,3 +61,44 @@
 
 .twin-registration-pair img{height:auto;object-fit:contain}@media(max-width:650px){.twin-registration-pair img{height:auto}}
 .reference-image{position:relative;margin:12px 0;border-radius:10px;overflow:hidden}.reference-image img{display:block;width:100%;height:auto}.reference-image svg,.reference-pick{position:absolute;inset:0;width:100%;height:100%}.reference-pick{border:0;background:transparent;cursor:crosshair}.reference-calibration{margin:12px 0}.vehicle-parameters .field{margin-top:12px}.simulation-gains{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0}.simulation-gains>div{flex:1 1 150px;background:var(--surface-soft,#f0eee2);padding:14px;border-radius:12px}.simulation-gains span{display:block;font-size:12px}.simulation-gains strong{display:block;font-size:22px;margin:6px 0}
+
+.repair-photo-views{margin:22px 0;padding:20px 0;border-top:1px solid #d6d7c8;border-bottom:1px solid #d6d7c8}
+.repair-photo-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.repair-photo-controls select,.repair-photo-controls input[type=number]{width:100%;margin-top:8px}
+.repair-photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.repair-photo-grid figure{margin:0;min-width:0}.repair-photo-grid figcaption{font-size:13px;line-height:1.5;min-height:44px;margin-bottom:10px}
+.repair-photo-grid figcaption small{display:block;color:#797a6e}.repair-photo-stage{position:relative;overflow:hidden;border-radius:8px;background:#dedfd3}
+.repair-photo-stage>img{display:block;width:100%;height:auto}.repair-photo-stage>img.repair-mask-preview{position:absolute;inset:0;opacity:.35;mix-blend-mode:screen}
+.repair-photo-placeholder{aspect-ratio:1.5;display:grid;place-items:center;color:#77786e;font-size:12px}
+@media(max-width:900px){.repair-photo-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.repair-photo-controls,.repair-photo-grid{grid-template-columns:1fr}.repair-photo-grid figcaption{min-height:0}.repair-photo-views{padding:16px 0}}
+
+/* Native weather evidence keeps the original raster; only CSS display size changes. */
+.native-weather-lab {min-width:0;display:grid;gap:16px}
+.native-weather-lab h3,.native-weather-lab p {margin:0}
+.native-weather-evidence {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
+.native-evidence {margin:0;min-width:0;border:1px solid var(--border,#d7d3c7);border-radius:14px;overflow:hidden;background:var(--surface,#f5f2e9)}
+.native-evidence figcaption {display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;padding:12px 14px}
+.native-evidence figcaption small {color:var(--muted,#706f68)}
+.native-zoom {display:flex;gap:12px;align-items:center;padding:0 14px 10px;flex-wrap:wrap}
+.native-zoom span {font-size:12px;font-variant-numeric:tabular-nums}
+.native-evidence-scroll {overflow:auto;height:380px;background:#202824;max-width:100%;overscroll-behavior:contain}
+.native-evidence-scroll img {display:block;position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:fill}
+.native-evidence-outlines {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.native-evidence-scroll .native-effect-mask {opacity:.3;mix-blend-mode:screen}
+.native-evidence > .fine-print,.native-evidence > .field-error {padding:10px 14px}
+.native-weather-placeholder {min-height:380px;display:grid;place-items:center;text-align:center;padding:30px;border:1px dashed var(--border,#c9c5b9);border-radius:14px;color:var(--muted,#706f68)}
+.native-weather-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+.native-weather-lab .measurement {padding:12px;border:1px solid var(--border,#ddd8ca);border-radius:10px;display:flex;flex-direction:column;gap:8px}
+.native-weather-lab .measurement span {font-size:12px;color:var(--muted,#706f68)}
+.native-weather-lab .measurement strong {font-size:18px;font-variant-numeric:tabular-nums}
+.native-weather-lab .table-scroll {max-height:420px;overflow:auto}
+.native-weather-lab table td {max-width:320px;min-width:100px;white-space:normal;vertical-align:top;font-size:12px;overflow-wrap:anywhere}
+.native-weather-lab table th {white-space:normal}
+.native-weather-lab details {border-top:1px solid var(--border,#ddd8ca);padding-top:12px}
+.native-weather-lab summary {cursor:pointer;margin-bottom:10px}
+.native-annotation-input input[type=file] {max-width:100%;font-size:12px}
+@media(max-width:900px){.native-weather-evidence {grid-template-columns:1fr}.native-evidence-scroll{height:320px}}
+@media(max-width:500px){.native-weather-metrics {grid-template-columns:1fr}.native-evidence-scroll{height:280px}.native-weather-lab .action-row{align-items:stretch;flex-direction:column}}
+
+.native-weather-lab .fine-print {overflow-wrap:anywhere}

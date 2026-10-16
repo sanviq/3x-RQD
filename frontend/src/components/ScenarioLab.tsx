@@ -1,3 +1,6 @@
+import {NativeWeatherLab} from './NativeWeatherLab';
+import {defaultPhotoSettings} from '../api/repairPhotos';
+import type {PhotoAssumptions} from '../api/repairPhotos';
 import {TwinRegistration} from './TwinRegistration';
 import {VehicleParameters} from './VehicleParameters';
 import {DrivingSummary} from './DrivingSummary';
@@ -32,6 +35,8 @@ export function ScenarioLab(props:Props) {
 function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const source=analysis.selected;
   const [tab,setTab]=useState('Driving comparison');
+  const initialPhotoRepairs=useRef(false);
+  const [photoAssumptions,setPhotoAssumptions]=useState<PhotoAssumptions>({...defaultPhotoSettings});
   const [reference,setReference]=useState<HTMLCanvasElement|null>(null);
   const quad=source?analysis.roadQuad:fullQuad;
   const texture=useMemo(()=>reference?(source?rectifyRoad(reference,quad):reference):null,[reference,source,quad]);
@@ -81,6 +86,11 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const mark=marks.find(m=>m.id===active);
   const baseKey=JSON.stringify({quad,referenceFrame:frameTime,referenceRevision,marks:marks.map(m=>({...m,repaired:false})),path,config});
   const repairKey=marks.filter(m=>m.repaired).map(m=>m.id).join(',');
+  useEffect(()=>{
+    if(tab!=='Repair & deterioration'||!source||initialPhotoRepairs.current||!marks.length||analysis.detectionBusy)return;
+    initialPhotoRepairs.current=true;
+    if(!marks.some(m=>m.repaired))setMarks(ms=>ms.map(m=>({...m,repaired:m.kind==='Pothole'||m.kind==='Depression'})));
+  },[tab,source,marks,analysis.detectionBusy]);
   const current=useMemo(()=>effectiveMarks(marks,scenario,months,growth),[marks,scenario,months,growth]);
   const twinForRender=useMemo(()=>{const m=marks.find(m=>m.id===twin.focus);return {...twin,anchor:m?{x:m.x,y:m.y,width:m.width,length:m.length}:undefined}},[marks,twin]);
   const surface=useMemo(()=>texture?scenarioTexture(texture,marks,scenario,months,growth):null,[texture,marks,scenario,months,growth]);
@@ -193,7 +203,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const exportScenario=()=>downloadJson({
     schema:'road-health-simulation-v2',source:source?{name:source.file.name,width:source.width,height:source.height}:'Synthetic sample',
     provenance:'Photo texture plus user-defined geometry. Depth, dimensions, deterioration, costs and vehicle parameters are assumptions. This is not a reconstructed or validated road.',
-    detection:analysis.detection,excludedCandidates:analysis.excludedDefects,config,roadFootprint:quad,referenceFrameSeconds:frameTime,videoName:analysis.videoSource?.file.name,marks,path,scenario,months,growth,twinDisplay:twin,weather,intensity,repairRatePerSquareMetre:rate,budget,runs,
+    detection:analysis.detection,excludedCandidates:analysis.excludedDefects,config,roadFootprint:quad,referenceFrameSeconds:frameTime,videoName:analysis.videoSource?.file.name,marks,path,scenario,months,growth,photoAssumptions,twinDisplay:twin,weather,intensity,repairRatePerSquareMetre:rate,budget,runs,
     imageAnalysis:comparison,renderedFrameAnalysis:frameResult,
   },'road-simulation');
   const freezeVideo=()=>{
@@ -218,7 +228,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
     <div className="sim-layout">
       <div className="results-stack">
         <section className="panel sim-viewer"><PanelTitle title={tab} eyebrow={source?'UPLOADED PHOTO · ASSUMED GEOMETRY':'SYNTHETIC EXAMPLE'}><Badge tone="lavender">{scenario} scenario</Badge></PanelTitle>
-          {tab==='Repair & deterioration'&&<RepairTools texture={texture} marks={marks} config={config} scenario={scenario} months={months} growth={growth} onScenario={setScenario} onMonths={setMonths} onGrowth={setGrowth} onAll={value=>{setMarks(ms=>ms.map(m=>({...m,repaired:value})));setScenario('Repaired')}} busy={batchBusy} progress={batchProgress} error={batchError} onCompare={compareDrives} onCancel={cancelComparison}/>}
+          {tab==='Repair & deterioration'&&<RepairTools photo={source?{file:source.file,quad,boxGeometry:analysis.detection?.method==='yolo_rdd_detection',assumptions:photoAssumptions,onAssumptions:setPhotoAssumptions}:undefined} texture={texture} marks={marks} config={config} scenario={scenario} months={months} growth={growth} onScenario={setScenario} onMonths={setMonths} onGrowth={setGrowth} onAll={value=>{setMarks(ms=>ms.map(m=>({...m,repaired:value})));setScenario('Repaired')}} busy={batchBusy} progress={batchProgress} error={batchError} onCompare={compareDrives} onCancel={cancelComparison}/>}
           <div hidden={!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)}>
             <RoadCanvas visible={visible&&['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)} canvasRef={canvasRef} texture={surface} twin={twinForRender} marks={current} config={config} path={path} scenario={scenario} running={running} resetId={resetId} scene={scene} camera={camera} rotation={rotation} zoom={zoom} mesh={mesh} guides={guides} playbackRate={playbackRate}
               onTelemetry={onTelemetry} onComplete={onComplete} onRotate={setRotation} onZoom={setZoom}/>
@@ -240,12 +250,12 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
             <label className="field">Playback rate · physics unchanged<select aria-label="Simulation playback rate" value={playbackRate} onChange={e=>setPlaybackRate(Number(e.target.value))}><option value="1">1× · normal</option><option value="0.5">0.5× · slow motion</option><option value="0.25">0.25× · inspect wheel contact</option></select></label><p className="fine-print">Slow motion changes viewing time only. Assumed vehicle speed, the 240 Hz physics, simulation timestamps and comparison metrics stay the same. Original video replay uses its own playback clock.</p>
             {analysis.videoSource&&<div className="sim-video-controls"><label className="field">Video position · {number(videoTime,1)} / {number(videoDuration,1)} s<input aria-label="Simulation video position" type="range" min="0" max={videoDuration||1} step=".1" value={Math.min(videoTime,videoDuration||1)} onChange={e=>{setRunning(false);seekVideo(Number(e.target.value));setVideoReplay(true)}}/></label><div className="action-row"><button className="button secondary small" disabled={!video} onClick={freezeVideo}>Use current video frame for 3D & annotations</button><button className="text-button" disabled={!video} onClick={()=>{setCamera('Scene');setVideoReplay(true);setRunning(true)}}>Replay video in scene</button></div><p className="fine-print">Scene mode replays the video; other cameras use the reference frame at {number(frameTime,1)} s. Changing the reference clears annotations and recorded drives. Video playback and assumed car speed are independent; this is not motion or defect tracking.</p></div>}
             <p className="fine-print">API contour coordinates drive the rendered relief and rolling tire contact. The initial inspection path deliberately aligns the right wheel with a visible candidate; it is not a safe route recommendation. Edit the path to avoid defects. The 345 mm tire, spring, damper and wheel arch respond to a four-wheel quarter-car model with assumed mass and stiffness. Narrow cracks are bridged by the tire footprint; larger defects produce stronger compression and rebound. Acceleration is simulated, not measured, and is not an engineering comfort grade.</p>
-          </div>{tab==='Weather lab'?<>
+          </div>{tab==='Weather lab'?(source?<NativeWeatherLab capture={source} quad={quad}/>:<>
             <div className="sim-image-pair"><figure><figcaption>Current scenario · reference pixels</figcaption>{texture&&<img src={scenarioUrl} alt="Current scenario road texture before weather stress"/>}</figure><figure><figcaption>{weather==='None'?'Scenario image':weather+' · synthetic effect'}</figcaption>{altered&&<img src={alteredUrl} alt={'Road image with synthetic '+weather+' effect'}/>}</figure></div>
             <div className="weather-options">{(['None','Shadow','Low light','Glare','Blur','Perspective','Rain'] as Weather[]).map(w=><button key={w} className={'button small '+(weather===w?'primary':'secondary')} aria-pressed={weather===w} onClick={()=>setWeather(w)}>{w}</button>)}</div>
             <label className="field">Effect intensity · {intensity}%<input type="range" min="0" max="100" value={intensity} onChange={e=>setIntensity(Number(e.target.value))}/></label>
             <div className="action-row"><button className="button primary" disabled={!altered||apiBusy} onClick={()=>void compareImages()}>{apiBusy?<><span className="spinner"/>Analyzing image pair…</>:'Analyze original & altered images'}</button><button className="button secondary" disabled={!altered} onClick={()=>{if(altered)downloadCanvas(altered,'synthetic-weather-road.png')}}>Download altered image</button></div><p className="fine-print">Effects change actual canvas pixels. Backend comparison sends both rendered images with calibration omitted. No confidence or accuracy is invented; synthetic stress tests do not establish real-weather performance.</p>
-          </>:tab==='Severity heatmap'?<>
+          </>):tab==='Severity heatmap'?<>
             <div className="sim-image-pair"><figure><figcaption>Original image</figcaption>{texture&&<img src={originalUrl} alt="Original road image"/>}</figure><figure><figcaption>{heatLayer==='Image contrast'?'Local dark contrast · not defect probability':'API / manual visual severity'}</figcaption>{heatLayer==='Image contrast'?<img src={contrastUrl} alt="Relative dark contrast of the selected road; not inferred defect severity"/>:annotations(true)}</figure></div><div className="segmented" role="group" aria-label="Surface heat layer">{(['Image contrast','Defect severity'] as const).map(layer=><button key={layer} className={heatLayer===layer?'active':''} aria-pressed={heatLayer===layer} onClick={()=>setHeatLayer(layer)}>{layer}</button>)}</div><p className="fine-print">Local dark contrast is calculated from the selected road pixels immediately. It highlights local changes in brightness, which can include shadows, markings, aggregate and damage. It does not classify defects or infer severity, probability, or depth.</p>{heatLayer==='Defect severity'?<><div className="overlay-legend"><span><i className="dot poor"/>High assumed severity</span><span><i className="dot fair"/>Moderate</span><span><i className="dot good"/>Low</span><span>Unmarked areas: unassessed</span></div><Note>Regions use reviewed API visual severity or manual assumptions; they are not calibrated engineering severity. Repaired regions are omitted from the Repaired scenario.</Note></>:<div className="overlay-legend"><span><i className="dot fair"/>Amber/red: stronger local dark contrast</span><span>No defect severity inferred</span></div>}
           </>:tab==='Repair budget'?<>
             <label className="field">Repair budget · {money(budget)}<input type="range" min="0" max="500000" step="1000" value={budget} onChange={e=>setBudget(Number(e.target.value))}/></label>

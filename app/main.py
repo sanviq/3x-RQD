@@ -96,6 +96,15 @@ async def detect_uploaded_defects(
         raise HTTPException(422, str(exc)) from exc
 
 
+from app.weather_compare import router as weather_router
+app.include_router(weather_router, prefix="/api")
+app.include_router(weather_router, include_in_schema=False)
+
+# Photo-grounded repair views; register before the optional static frontend.
+from app.repair_views import router as repair_router
+app.include_router(repair_router, prefix="/api")
+app.include_router(repair_router, include_in_schema=False)
+
 # Keep the teammates' /api client and Vite's prefix-stripping proxy compatible.
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles

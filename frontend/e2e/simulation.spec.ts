@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { demoResult } from '../src/data/demo';
+import {weatherFixture} from '../tests/fixtures/weather';
 test.beforeEach(async({page})=>{
   await page.route('**/api/detect-defects',route=>route.fulfill({json:{"version":"opencv-candidates-v1","method":"opencv_multiscale_contours","coordinate_system":"normalized_exif_oriented_original","confidence_calibrated":false,"requires_review":true,"road_quad":[{"x":0,"y":0},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}],"image":{"width":64,"height":64},"defects":[],"warnings":[]}}));
   await page.route('**/api/health',route=>route.fulfill({json:{status:'ok',model_loaded:false,feature_version:'surface-v1'}}));
@@ -30,14 +30,15 @@ test('uploaded road supports driving, repairs and real weather comparison',async
   await page.getByRole('button',{name:'Weather lab',exact:true}).click();
   await page.getByRole('button',{name:'Low light',exact:true}).click();
   let requests=0;
-  await page.route('**/api/analyze',async route=>{requests++;await route.fulfill({json:demoResult})});
+  await page.route('**/api/weather-compare',async route=>{requests++;await route.fulfill({json:weatherFixture('low_light',64,64)})});
+  await page.route('**/api/weather-evidence/**',route=>route.fulfill({contentType:'image/png',body:fixture}));
   await page.getByRole('button',{name:'Analyze original & altered images'}).click();
-  await expect(page.getByText('Simulation analysis complete.',{exact:true})).toBeVisible();
-  expect(requests).toBe(2);await expect(page.locator('.sim-api-result')).toHaveCount(2);
-  const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download altered image'}).click();
-  expect((await downloaded).suggestedFilename()).toBe('synthetic-weather-road.png');
+  await expect(page.getByRole('table',{name:'Weather robustness metrics'})).toBeVisible();
+  expect(requests).toBe(1);await expect(page.locator('.native-evidence')).toHaveCount(2);
+  const downloaded=page.waitForEvent('download');await page.getByRole('link',{name:'Download altered native image'}).click();
+  expect((await downloaded).suggestedFilename()).toBe('road-low_light-native.png');
   await page.getByRole('button',{name:'Shadow',exact:true}).click();
-  await expect(page.locator('.sim-api-result')).toHaveCount(0);
+  await expect(page.getByAltText('Shadow altered road at original resolution')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
 test('all simulation tools open without backend',async({page,isMobile})=>{
