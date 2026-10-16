@@ -274,3 +274,5 @@ from app.research import router as research_router
 router.include_router(research_router)
 from app.calibration import router as calibration_router
 router.include_router(calibration_router)
+from app.survey_import import router as survey_import_router
+router.include_router(survey_import_router)

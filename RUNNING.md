@@ -190,3 +190,11 @@ or unmatched prediction categories. These categories describe label overlap;
 they do not prove physical causes or completeness of ground-truth annotations.
 The existing evaluation evidence release archive includes these reports. Use
 validation reports to design changes; keep the final test for evaluation only.
+
+### Demo dashboard and real GPS inspection import
+
+The empty live overview offers **Explore demo dashboard** for the six labelled
+sample roads. Live Overview and Saved GPS surveys include **Import GPS inspection
+records**: choose/paste JSON, preview, then explicitly save. See
+[GPS inspection import](docs/GPS_INSPECTION_IMPORT.md) for the schema, limits,
+sharing exports with teammates and the separate GeoJSON geometry workflow.

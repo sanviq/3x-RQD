@@ -7,13 +7,13 @@ import { Icon } from './Icon';
 import { NetworkMap } from './NetworkMap';
 import { Badge, PanelTitle } from './UI';
 import { number } from '../utils/formatters';
-export function Overview({demo,weights,onNavigate,onSegment}:{demo:boolean;weights:Weights;onNavigate:(page:Page)=>void;onSegment:(id:string)=>void;analysis:AnalysisController}) {
+export function Overview({demo,weights,onNavigate,onSegment,onExploreDemo}:{demo:boolean;onExploreDemo:()=>void;weights:Weights;onNavigate:(page:Page)=>void;onSegment:(id:string)=>void;analysis:AnalysisController}) {
   const [selected,setSelected]=useState(segments[0].id);
   const [filter,setFilter]=useState('All conditions');
   const stats=summary(weights);
   const selectedSegment=segments.find(x=>x.id===selected)!;
   const ongoing=segments.filter(x=>filter==='All conditions'||band(score(x,weights))===filter).slice(0,3);
-  if(!demo)return <LiveNetwork onNavigate={onNavigate} compact/>;
+  if(!demo)return <LiveNetwork onNavigate={onNavigate} onExploreDemo={onExploreDemo} compact/>;
   return <div className="page-enter">
     <div className="page-heading"><div><p className="eyebrow">YOUR INSPECTION WORKSPACE</p><h1>Roads at a glance<span className="heading-dot">.</span></h1><p>Condition, coverage, and maintenance priorities.</p></div><button className="button primary" onClick={()=>onNavigate('inspection')}><Icon name="plus" size={17}/>New inspection</button></div>
     <div className="workspace-note"><span><i className="dot lavender"/>Demo workspace</span><p>Six sample segments in East Bengaluru. All metrics below are illustrative.</p><button className="text-button" onClick={()=>onNavigate('network')}>Explore network<Icon name="arrow" size={15}/></button></div>
