@@ -102,6 +102,12 @@ def main():
             'diagnostic':{'confidence':a.confidence,'iou':.5,'precision':precision,'recall':recall,'f1':2*precision*recall/max(1e-12,precision+recall),**dict(t),'per_class_counts':per_class},
             'notice':'Internal labelled holdout; not official challenge test accuracy. Ultralytics P/R use its operating-point convention; diagnostic P/R use the explicit threshold. No model improvement claim without a matched held-out baseline comparison.'}
     (output/'report.json').write_text(json.dumps(report,indent=2))
+    # Reuse saved predictions: no extra model inference, GPU work or test tuning.
+    from tools.detection_error_summary import summarize_errors
+    with (output/'predictions.jsonl').open() as f:
+        errors=summarize_errors((json.loads(line) for line in f),a.confidence)
+    errors.update(split=a.split,checkpoint_sha256=checksum)
+    (output/'error-summary.json').write_text(json.dumps(errors,indent=2))
     print(json.dumps(report,indent=2))
 
 

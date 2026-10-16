@@ -174,3 +174,19 @@ or zoom, and use **Fit road** to restore the default camera. Canvas resizing and
 high-DPI rendering do not change measurements or infer actual defect depth.
 After updating, rebuild the frontend (`cd frontend && npm run build`) and refresh
 port 8000, or restart/use the Vite development server on port 5173.
+
+### Live detector progress and error diagnosis
+
+Model evaluation polls both progress and published final results every 30 seconds.
+The current epoch's validation precision, recall and mAP are explicitly interim;
+Ultralytics chooses their operating point, so they are not the fixed-threshold
+held-out diagnostics. The training-only ETA uses recent completed epoch durations,
+excludes evaluation, and is hidden when the supervisor heartbeat is stale.
+
+Each new `tools.evaluate_detector` evaluation also writes `error-summary.json`
+from the already-saved predictions, without extra inference. It reports class
+precision/recall, missed annotation sizes and duplicate, wrong-class, localization
+or unmatched prediction categories. These categories describe label overlap;
+they do not prove physical causes or completeness of ground-truth annotations.
+The existing evaluation evidence release archive includes these reports. Use
+validation reports to design changes; keep the final test for evaluation only.
