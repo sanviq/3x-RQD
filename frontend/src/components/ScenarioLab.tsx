@@ -1,4 +1,6 @@
 import {TwinRegistration} from './TwinRegistration';
+import {VehicleParameters} from './VehicleParameters';
+import {DrivingSummary} from './DrivingSummary';
 import { RepairTools } from './RepairTools';
 import { SurfaceProfile } from './SurfaceProfile';
 import { twinDefaults } from '../simulation/twin';
@@ -58,6 +60,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
   const [mesh,setMesh]=useState(false);
   const [guides,setGuides]=useState(true);
   const [running,setRunning]=useState(false);
+  const [playbackRate,setPlaybackRate]=useState(1);
   const [resetId,setResetId]=useState(0);
   const [completed,setCompleted]=useState(false);
   const autoStarted=useRef(false);
@@ -134,7 +137,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
 
 
   useEffect(()=>{if(!visible||!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab))setRunning(false)},[visible,tab]);
-  useEffect(()=>{setRuns(old=>({Original:old.Original,Repaired:old.Repaired}))},[months]);
+  useEffect(()=>{setRuns(old=>({Original:old.Original,Repaired:old.Repaired}))},[months,growth]);
   useEffect(()=>{setRuns(old=>({Original:old.Original,Deteriorated:old.Deteriorated}))},[repairKey]);
   useEffect(()=>{
     setRunning(false);setCompleted(false);setTelemetry(initialDrive());setResetId(id=>id+1);
@@ -217,7 +220,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
         <section className="panel sim-viewer"><PanelTitle title={tab} eyebrow={source?'UPLOADED PHOTO · ASSUMED GEOMETRY':'SYNTHETIC EXAMPLE'}><Badge tone="lavender">{scenario} scenario</Badge></PanelTitle>
           {tab==='Repair & deterioration'&&<RepairTools texture={texture} marks={marks} config={config} scenario={scenario} months={months} growth={growth} onScenario={setScenario} onMonths={setMonths} onGrowth={setGrowth} onAll={value=>{setMarks(ms=>ms.map(m=>({...m,repaired:value})));setScenario('Repaired')}} busy={batchBusy} progress={batchProgress} error={batchError} onCompare={compareDrives} onCancel={cancelComparison}/>}
           <div hidden={!['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)}>
-            <RoadCanvas visible={visible&&['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)} canvasRef={canvasRef} texture={surface} twin={twinForRender} marks={current} config={config} path={path} scenario={scenario} running={running} resetId={resetId} scene={scene} camera={camera} rotation={rotation} zoom={zoom} mesh={mesh} guides={guides}
+            <RoadCanvas visible={visible&&['Driving comparison','Digital twin','Repair & deterioration'].includes(tab)} canvasRef={canvasRef} texture={surface} twin={twinForRender} marks={current} config={config} path={path} scenario={scenario} running={running} resetId={resetId} scene={scene} camera={camera} rotation={rotation} zoom={zoom} mesh={mesh} guides={guides} playbackRate={playbackRate}
               onTelemetry={onTelemetry} onComplete={onComplete} onRotate={setRotation} onZoom={setZoom}/>
             <div className="sim-camera-row"><div className="segmented" role="group" aria-label="Simulation camera">{((source?['Wheel','Scene','Orbit','Chase','Driver']:['Wheel','Orbit','Chase','Driver']) as CameraMode[]).map(c=><button key={c} className={camera===c?'active':''} aria-pressed={camera===c} onClick={()=>setCamera(c)}>{c}</button>)}</div>{camera==='Orbit'&&<label className="checkbox-row"><input type="checkbox" checked={mesh} onChange={e=>setMesh(e.target.checked)}/>Surface grid</label>}<label className="checkbox-row"><input type="checkbox" checked={guides} onChange={e=>setGuides(e.target.checked)}/>{camera==='Wheel'?'Defect labels':'Path & edges'}</label></div>
             {camera==='Orbit'&&<div className="twin-controls">
@@ -234,6 +237,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
 
             <div className="sim-telemetry"><div><span>Route progress</span><strong>{number(clamp((telemetry.z-1.6)/(config.length-3.2),0,1)*100,0)}%</strong></div><div><span>Assumed speed</span><strong>{config.speed}<small> km/h</small></strong></div><div><span>Body acceleration</span><strong>{number(telemetry.acceleration)}<small> m/s²</small></strong></div><div><span>Simulated elapsed time</span><strong>{number(telemetry.time,1)}<small> s</small></strong></div></div>
             <div className="action-row"><button className="button primary" disabled={!texture} onClick={startDrive}><Icon name="car" size={17}/>{running?'Pause drive':completed?'Drive again':telemetry.time>0?'Resume drive':'Start drive'}</button><button className="button secondary" onClick={resetDrive}>Reset drive</button><button className="text-button" disabled={!texture} onClick={()=>{if(canvasRef.current)downloadCanvas(canvasRef.current,'synthetic-road-camera.png')}}>Save camera frame<Icon name="download" size={15}/></button></div>
+            <label className="field">Playback rate · physics unchanged<select aria-label="Simulation playback rate" value={playbackRate} onChange={e=>setPlaybackRate(Number(e.target.value))}><option value="1">1× · normal</option><option value="0.5">0.5× · slow motion</option><option value="0.25">0.25× · inspect wheel contact</option></select></label><p className="fine-print">Slow motion changes viewing time only. Assumed vehicle speed, the 240 Hz physics, simulation timestamps and comparison metrics stay the same. Original video replay uses its own playback clock.</p>
             {analysis.videoSource&&<div className="sim-video-controls"><label className="field">Video position · {number(videoTime,1)} / {number(videoDuration,1)} s<input aria-label="Simulation video position" type="range" min="0" max={videoDuration||1} step=".1" value={Math.min(videoTime,videoDuration||1)} onChange={e=>{setRunning(false);seekVideo(Number(e.target.value));setVideoReplay(true)}}/></label><div className="action-row"><button className="button secondary small" disabled={!video} onClick={freezeVideo}>Use current video frame for 3D & annotations</button><button className="text-button" disabled={!video} onClick={()=>{setCamera('Scene');setVideoReplay(true);setRunning(true)}}>Replay video in scene</button></div><p className="fine-print">Scene mode replays the video; other cameras use the reference frame at {number(frameTime,1)} s. Changing the reference clears annotations and recorded drives. Video playback and assumed car speed are independent; this is not motion or defect tracking.</p></div>}
             <p className="fine-print">API contour coordinates drive the rendered relief and rolling tire contact. The initial inspection path deliberately aligns the right wheel with a visible candidate; it is not a safe route recommendation. Edit the path to avoid defects. The 345 mm tire, spring, damper and wheel arch respond to a four-wheel quarter-car model with assumed mass and stiffness. Narrow cracks are bridged by the tire footprint; larger defects produce stronger compression and rebound. Acceleration is simulated, not measured, and is not an engineering comfort grade.</p>
           </div>{tab==='Weather lab'?<>
@@ -261,6 +265,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
           <div className="sim-path-tools"><button className="text-button" onClick={()=>setPath([{x:.5,y:1},{x:.5,y:0}])}>Reset to straight path</button>{path.slice(2).length>0&&<button className="text-button" onClick={()=>setPath(ps=>ps.slice(0,-1))}>Remove last waypoint</button>}<span>{marks.length} annotations · {path.length} waypoints</span></div>
         </section>
         <section className="panel"><PanelTitle title="Before & after driving"/><p className="input-help">Complete an Original drive, choose defects to repair, switch to Repaired, then drive again. Use Compare all three drives in Repair & deterioration for a consistent batch. Changing the path, speed, dimensions or defect geometry clears incompatible recordings.</p>
+          <DrivingSummary runs={runs} marks={marks}/>
           <div className="table-scroll"><table className="drive-results"><thead><tr><th>Simulated metric</th><th>Original</th><th>Repaired</th><th>Deteriorated</th></tr></thead><tbody>{([
             ['Vertical acceleration RMS','rms','m/s²'],['Peak body acceleration','peak','m/s²'],['Distance traveled','distance','m'],['Elapsed time','seconds','s'],['Assumed speed','speed','km/h'],['Wheel-contacted annotations','hits',''],
           ] as const).map(([label,key,unit])=><tr key={key}><td>{label}</td>{(['Original','Repaired','Deteriorated'] as Scenario[]).map(s=><td key={s}>{runs[s]?number(runs[s]![key],key==='hits'?0:2)+(unit?' '+unit:''):'No recorded drive'}</td>)}</tr>)}</tbody></table></div>
@@ -286,7 +291,7 @@ function SimulationWorkspace({active:visible,onNavigate,analysis}:Props) {
           <label className="field">Assumed driving speed · {config.speed} km/h<input aria-label="Assumed driving speed" type="range" min="5" max="80" value={config.speed} onChange={e=>setConfig(c=>({...c,speed:Number(e.target.value)}))}/></label>
           {scenario==='Deteriorated'&&<p className="input-help">Assumed horizon: {months} months · depth +{growth.depth*100}% / month · footprint +{growth.size*100}% / month. <button className="text-button" onClick={()=>setTab('Repair & deterioration')}>Edit deterioration assumptions</button></p>}
           <div className="measurement-grid sim-assumptions"><div className="measurement"><span>Active annotations</span><strong>{current.length}</strong></div><div className="measurement"><span>Assumed affected area</span><strong>{percent(coverage)}</strong></div></div>
-          <details className="lab-thresholds"><summary>Vehicle model parameters</summary><p className="fine-print">Per wheel: sprung mass 350 kg; unsprung mass 40 kg; spring 22,000 N/m; damper 1,800 N·s/m; tire 180,000 N/m. Wheelbase 2.6 m; track 1.5 m. Fixed 240 Hz integration. No tire adhesion, collision damage, braking, water dynamics or validated comfort model.</p></details>
+          <VehicleParameters config={config} onChange={setConfig}/>
           <p className="fine-print">The selected road footprint is rectified with a planar perspective transform for spatial alignment. Enter known dimensions if available; defaults are assumed. Simulation dimensions do not calibrate the backend or reconstruct depth.</p>
         </section>
         <section className="panel"><PanelTitle title="Defect annotations"><Badge>{marks.length}</Badge></PanelTitle><label className="field" htmlFor="new-defect-kind">New annotation type</label><select id="new-defect-kind" className="sim-select" value={kind} onChange={e=>setKind(e.target.value as DefectKind)}>{(['Pothole','Crack','Depression','Ravelling','Uneven surface'] as DefectKind[]).map(k=><option key={k}>{k}</option>)}</select>

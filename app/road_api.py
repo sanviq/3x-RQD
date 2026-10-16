@@ -272,3 +272,5 @@ from app.dataset_examples import router as dataset_router
 router.include_router(dataset_router)
 from app.research import router as research_router
 router.include_router(research_router)
+from app.calibration import router as calibration_router
+router.include_router(calibration_router)

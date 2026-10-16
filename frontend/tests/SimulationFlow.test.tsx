@@ -57,3 +57,25 @@ describe('simulation analysis lifecycle',()=>{
     expect(screen.queryByText('0.0 / 100')).not.toBeInTheDocument();
   });
 });
+
+it('clears only deterioration after growth changes and all runs after vehicle edits',async()=>{
+  const result={rms:.5,peak:2,distance:26.8,seconds:3.86,speed:25,hits:3,trace:[]};
+  class WorkerFixture {
+    onmessage:((e:{data:unknown})=>void)|null=null;onerror:unknown;
+    terminate(){}
+    postMessage(){queueMicrotask(()=>this.onmessage?.({data:{type:'complete',results:{Original:{...result,scenario:'Original'},Repaired:{...result,rms:0,scenario:'Repaired'},Deteriorated:{...result,rms:.8,scenario:'Deteriorated'}}}}))}
+  }
+  vi.stubGlobal('Worker',WorkerFixture);
+  try{
+    render(<ScenarioLab active demo selected="RH-001" onNavigate={vi.fn()} analysis={controller()}/>);
+    fireEvent.click(screen.getByRole('button',{name:'Repair & deterioration',exact:true}));
+    await waitFor(()=>expect(screen.getByRole('button',{name:'Compare all three drives'})).toBeEnabled());
+    fireEvent.click(screen.getByRole('button',{name:'Compare all three drives'}));
+    await waitFor(()=>expect(screen.getByRole('row',{name:/Vertical acceleration RMS/})).toHaveTextContent('0.80 m/s²'));
+    fireEvent.change(screen.getByLabelText('Depth growth percent per month'),{target:{value:'4'}});
+    const row=screen.getByRole('row',{name:/Vertical acceleration RMS/});
+    expect(row).toHaveTextContent('0.50 m/s²');expect(row).toHaveTextContent('0.00 m/s²');expect(row).toHaveTextContent('No recorded drive');
+    fireEvent.change(screen.getByLabelText('Sprung mass per wheel'),{target:{value:'600'}});
+    expect(screen.getByRole('row',{name:/Vertical acceleration RMS/}).textContent?.match(/No recorded drive/g)).toHaveLength(3);
+  }finally{vi.unstubAllGlobals()}
+});

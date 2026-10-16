@@ -145,3 +145,23 @@ npm run dev
 Use **Model evaluation** to view genuine recorded metrics and local training
 progress. **Surface inspection** includes the real country sample comparison.
 Datasets are kept outside the website; their size does not become the web bundle size.
+
+## Reference checks and vehicle parameters
+
+In **Surface inspection → Capture type & measurements**, select a rectified surface
+crop, open **Set scale from a measured reference**, and supply a known length plus
+its original-image pixel span (or select two endpoints). Optional scale uncertainty
+adds clearly labelled scale-only bounds to the results. The scale calculator does
+not establish uniform scale on a perspective scene.
+
+In **Model evaluation → Check calibrated measurement errors**, load independent
+predicted/measured reference pairs using the downloadable JSON format. The result
+reports errors separately in millimetres, square metres, density units or degrees.
+The format example is synthetic; replace it before interpreting errors.
+
+In **Scenario lab → Road & vehicle assumptions → Vehicle model parameters**, enter
+traceable per-wheel mass/stiffness/damping values and a source reference. Re-run
+**Compare all three drives** to see their effect. Use **Playback rate** for slow-motion
+wheel inspection; this changes viewing speed without changing the 240 Hz physics.
+Saved uncertain detections can be retained for repeat-capture follow-up. They do not
+receive a supported health grade merely because they were saved.

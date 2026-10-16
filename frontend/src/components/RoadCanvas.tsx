@@ -14,6 +14,7 @@ interface Props {
   canvasRef:RefObject<HTMLCanvasElement|null>;texture:HTMLCanvasElement|null;marks:Mark[];
   config:RoadConfig;path:Waypoint[];scenario:Scenario;running:boolean;resetId:number;
   camera:CameraMode;rotation:number;zoom:number;mesh:boolean;guides:boolean;
+  playbackRate?:number;
   onTelemetry:(state:DriveState)=>void;onComplete:(result:DriveResult)=>void;
   onRotate:(rotation:number)=>void;onZoom:(zoom:number)=>void;
 }
@@ -31,7 +32,7 @@ export function RoadCanvas(props:Props) {
       if(!p.visible){last=time;accumulator=0;frame=requestAnimationFrame(draw);return}
       const delta=last?Math.min((time-last)/1000,.08):0;last=time;
       if(p.running&&!done.current){
-        accumulator+=delta;
+        accumulator+=delta*(p.playbackRate??1);
         while(accumulator>=1/240){
           drive.current=stepDrive(drive.current,p.config,p.marks,p.path);accumulator-=1/240;
           if(drive.current.time-lastSample>=.05){trace.current.push({distance:drive.current.distance,acceleration:drive.current.acceleration});lastSample=drive.current.time}

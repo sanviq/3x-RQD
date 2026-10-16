@@ -8,7 +8,8 @@ export interface Mark {
   confidence?:number;visualSeverity?:number;polygon?:Waypoint[];
 }
 export interface Waypoint { x: number; y: number }
-export interface RoadConfig { width: number; length: number; speed: number }
+export interface SuspensionParameters {sprungMass:number;unsprungMass:number;spring:number;damping:number;tire:number}
+export interface RoadConfig { width: number; length: number; speed: number; suspension?:SuspensionParameters;vehicleReference?:string }
 export interface Wheel { body: number; bodyVelocity: number; axle: number; axleVelocity: number }
 export interface DriveState {
   z: number; time: number; distance: number; wheels: Wheel[]; acceleration: number;
@@ -76,6 +77,9 @@ export function initialDrive():DriveState {
     acceleration:0,heave:0,pitch:0,roll:0,energy:0,peak:0,hits:[]};
 }
 export const vehicle = {sprungMass:350,unsprungMass:40,spring:22000,damping:1800,tire:180000,wheelbase:2.6,track:1.5};
+export const suspensionLimits:Record<keyof SuspensionParameters,[number,number]>={sprungMass:[150,800],unsprungMass:[20,100],spring:[10000,60000],damping:[500,5000],tire:[80000,300000]};
+export const suspensionFor=(config:RoadConfig):SuspensionParameters=>config.suspension??vehicle;
+export const staticTireDeflection=(config:RoadConfig)=>{const v=suspensionFor(config);return (v.sprungMass+v.unsprungMass)*9.81/v.tire};
 
 /** Nominal passenger tire geometry. Static load is included in the tire deflection. */
 export const tire = { radius:.345, width:.235, staticDeflection:(vehicle.sprungMass+vehicle.unsprungMass)*9.81/vehicle.tire };
@@ -99,6 +103,7 @@ export function tireContactHeight(x:number,z:number,marks:Mark[],config:RoadConf
 }
 
 export function stepDrive(state:DriveState,config:RoadConfig,marks:Mark[],path:Waypoint[],dt=1/240):DriveState {
+  const suspension=suspensionFor(config),staticDeflection=staticTireDeflection(config);
   const gradient=(pathX(state.z+.1,path,config)-pathX(state.z-.1,path,config))/.2;
   const yaw=Math.atan(gradient), speed=config.speed/3.6;
   const z=Math.min(config.length-1.6,state.z+speed*Math.cos(yaw)*dt);
@@ -108,10 +113,10 @@ export function stepDrive(state:DriveState,config:RoadConfig,marks:Mark[],path:W
     const {x:wx,z:wz,yaw:wheelYaw}=wheelPosition(z,i,path,config);
     const road=tireContactHeight(wx,wz,marks,config,wheelYaw);
     for(const mark of marks)if(markDistance(mark,wx,wz,config)<1)hits.add(mark.id);
-    const springForce=vehicle.spring*(w.body-w.axle)+vehicle.damping*(w.bodyVelocity-w.axleVelocity);
-    const bodyAcceleration=-springForce/vehicle.sprungMass;
-    const tireForce=vehicle.tire*(Math.max(0,tire.staticDeflection+road-w.axle)-tire.staticDeflection);
-    const axleAcceleration=(springForce+tireForce)/vehicle.unsprungMass;
+    const springForce=suspension.spring*(w.body-w.axle)+suspension.damping*(w.bodyVelocity-w.axleVelocity);
+    const bodyAcceleration=-springForce/suspension.sprungMass;
+    const tireForce=suspension.tire*(Math.max(0,staticDeflection+road-w.axle)-staticDeflection);
+    const axleAcceleration=(springForce+tireForce)/suspension.unsprungMass;
     const bodyVelocity=w.bodyVelocity+bodyAcceleration*dt,axleVelocity=w.axleVelocity+axleAcceleration*dt;
     sumAcceleration+=bodyAcceleration;
     return {body:w.body+bodyVelocity*dt,bodyVelocity,axle:w.axle+axleVelocity*dt,axleVelocity};

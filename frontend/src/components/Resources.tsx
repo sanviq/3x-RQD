@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MeasuredEvaluation } from './MeasuredEvaluation';
+import { CalibrationEvaluation } from './CalibrationEvaluation';
 import { BackendEvaluationTool } from './BackendEvaluation';
 import { Badge, EmptyState, Note, PanelTitle } from './UI';
 import { Icon } from './Icon';
@@ -38,6 +39,7 @@ export function Evaluation(){
   return <div className="page-enter"><div className="page-heading"><div><p className="eyebrow">MODEL EVALUATION</p><h1>Model evaluation<span className="heading-dot">.</span></h1><p>Inspect evaluation data from a held-out, labeled dataset.</p></div><label className="button primary file-button"><Icon name="upload" size={16}/>Import evaluation JSON<input type="file" accept=".json,application/json" onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void importFile(f)}}/></label></div>
     <Note>Import an independently generated report, or calculate detection metrics from raw ground truth and predictions below. A loaded model and an experimental score do not establish validated accuracy.</Note>
     <MeasuredEvaluation/>
+    <CalibrationEvaluation/>
     <BackendEvaluationTool onCalculated={value=>{setReport(value);setDemo(false)}}/>
     {error&&<p className="field-error" role="alert">{error}</p>}
     {!report?<section className="panel"><EmptyState icon="chart" title="Import another evaluation report" description="Compare your own results here, or explore the explicitly synthetic chart layout. Measured RDD2022 results are displayed above." action={<div className="action-row"><button className="button secondary" onClick={()=>{setReport(sampleReport);setDemo(true)}}>View synthetic example</button><button className="text-button" onClick={()=>downloadJson({...sampleReport,schema_note:'Replace every value with your real evaluation results. Rows are actual classes; columns are predicted classes. map is a fraction; record your IoU definition in the dataset description.'},'evaluation-schema-example')}>Download format example<Icon name="download" size={15}/></button></div>}/></section>:<>

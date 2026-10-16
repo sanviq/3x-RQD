@@ -10,6 +10,7 @@ from app.features import MAX_BYTES, FEATURE_VERSION, decode_image, extract_featu
 from app.scoring import load_model, score
 from app.defects import DETECTOR_VERSION, parse_quad
 from app.integrated_detector import detect_defects
+from app.calibration import calibration_metadata
 
 
 @asynccontextmanager
@@ -27,11 +28,12 @@ def health():
             "feature_version": FEATURE_VERSION, "defect_version": DETECTOR_VERSION}
 
 
-def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None):
+def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None):
     if capture_type != "surface_crop":
         mm_per_pixel = None
     decoded = decode_image(data)
     result, overlay = extract_features(decoded, mm_per_pixel, road_quad)
+    result['calibration']=calibration_metadata(result['physical_measurements'],mm_per_pixel,scale_uncertainty_percent)
     result["defect_detection"] = detect_defects(decoded, road_quad)
     result["assessment"] = score(result["features"], getattr(app.state, "model", None), capture_type)
     result["capture_type"] = capture_type
@@ -57,6 +59,7 @@ async def analyze_road(
     include_overlay: bool = Form(False),
     capture_type: Literal["road_scene", "surface_crop"] = Form("road_scene"),
     road_quad: str | None = Form(None),
+    scale_uncertainty_percent: float | None = Form(None, ge=0, lt=100),
 ):
     try:
         data = await image.read(MAX_BYTES + 1)
@@ -65,7 +68,9 @@ async def analyze_road(
     if len(data) > MAX_BYTES:
         raise HTTPException(413, "Image exceeds the 12 MiB upload limit.")
     try:
-        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad))
+        if scale_uncertainty_percent is not None and (capture_type!='surface_crop' or mm_per_pixel is None):
+            raise ValueError('Scale uncertainty requires a surface crop with mm_per_pixel.')
+        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad),scale_uncertainty_percent)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

@@ -59,3 +59,50 @@ The affordable greedy ranking uses assumed depth × footprint area × severity m
 No new rendering dependency was added. Scenario exports use road-health-simulation-v2 and include growth assumptions and twin display settings.
 
 Source-to-twin registration and connected network integration are documented in [NETWORK_AND_ANALYSIS.md](NETWORK_AND_ANALYSIS.md).
+
+## Calibration and simulation reliability update
+
+The existing teammate simulation remains the main driving experience. The added
+vehicle-parameter editor changes the actual four-wheel spring/damper/tire equations
+and the renderer's static tire preload; it is not a display-only setting. Per-wheel
+masses, spring stiffness, damping and tire stiffness have bounded input ranges.
+Vehicle specifications or test-bench references may be recorded in the exported
+scenario. User-supplied values remain unverified. Wheelbase, track and tire radius
+remain explicit fixed assumptions; no friction, braking or safe-speed estimate is made.
+
+Original and Repaired runs retain the same route, speed, vehicle and assumed depth
+when calculating the repair summary. The summary displays simulated RMS change,
+selected repairs and remaining annotations. Changing any vehicle/road/geometry/path
+input clears incompatible recordings. Changing deterioration rates or months clears
+only the Deteriorated result; changing repair selection clears the Repaired result.
+No monotonic improvement is guaranteed for partial repairs under simplified dynamics.
+
+The additional backend camera experiment now renders a perspective road plane,
+projected defects, a car hood and matched before/after camera positions. Its sampled
+unitless vibration proxy remains separate from the frontend's quarter-car acceleration
+in m/s². Both are synthetic. Its route index is an unvalidated scenario index, not a
+measured road-health grade. Actual model mode uses real YOLO inference on the rendered
+frames; demo mode uses only projected visible fixture annotations, never hidden defects.
+
+Surface inspection can calculate a uniform mm/pixel scale by picking two endpoints
+of a known reference in the EXIF-oriented original, or by typing its original pixel
+span. This applies only to a rectified close-up on the same plane; it does not correct
+lens distortion or establish uniform scale on an arbitrary perspective image.
+
+Optional scale uncertainty is propagated as scale-only bounds: length scales with
+s, area with s², and density with 1/s². Unknown uncertainty stays unknown. These bounds
+exclude segmentation, endpoint, distortion and perspective errors unless those errors
+are already reflected in the supplied scale uncertainty; they are not statistical
+confidence intervals or total measurement-error limits.
+
+Model evaluation includes a separate real-reference measurement checker. Supply
+traceable predicted/measured pairs with matching units and unique sample/parameter
+IDs. It reports sample count, MAE, RMSE, bias and the 90th percentile absolute error
+separately for each parameter. Zero references are omitted from relative errors.
+Do not combine unlike units into a single “accuracy” percentage. Neither a sample
+reference nor a user-declared held-out flag independently certifies a calibration.
+Actual depth requires sensors or validated reconstruction. Material composition,
+friction and binder properties need appropriate laboratory tests.
+
+Reference geometry follows the [OpenCV calibration model](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html).
+Detector accuracy is evaluated separately using the [Ultralytics detection metrics](https://docs.ultralytics.com/guides/yolo-performance-metrics/).

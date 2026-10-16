@@ -20,6 +20,7 @@ export interface DetectionResult {
   width:number;height:number;processed_width:number;processed_height:number;
   timing:{inference_ms:number;pipeline_ms:number;pipeline_fps:number;includes:string};
   unique_tracks:number; assessment_confidence:number|null; repeat_capture:boolean;
+  camera_pose?:{lateral_fraction:number;distance_m:number;camera_height_m:number;geometry:string};
   frame_index?:number;timestamp_s?:number|null;effect:string;synthetic_stress_test:boolean;
 }
 export interface AssessmentInput {
@@ -70,7 +71,10 @@ export function baselineFor(result:DetectionResult,scale='',pitch='',roll='',inc
     inclination:inclination??(pitch.trim()?{source:'imu',pitch:Number(pitch),roll:roll.trim()?Number(roll):null}:{source:'unavailable'}),config:result.assessment.configuration,repaired:[]};
 }
 export async function calculateScenario(body:unknown,signal?:AbortSignal){return await request('/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal}) as {before:DefectAssessment;after:DefectAssessment;gain:number;assumptions:string;repaired_ids:string[]}}
-export async function runDriving(body:unknown,signal?:AbortSignal){return await request('/simulation/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal},300_000) as {before:{score:number;speed_kmh:number;remaining_defects:number;vibration_rms_proxy:number;frames:DetectionResult[]};after:{score:number;speed_kmh:number;remaining_defects:number;vibration_rms_proxy:number;frames:DetectionResult[]};notice:string}}
+export interface DrivingRun {score:number;speed_kmh:number;remaining_defects:number;vibration_rms_proxy:number;frames:DetectionResult[]}
+export interface DrivingReport {before:DrivingRun;after:DrivingRun;path:number;path_curve:number;camera_height_m:number;notice:string}
+export async function runDriving(body:unknown,signal?:AbortSignal){return await request('/simulation/drive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal},300_000) as DrivingReport}
+
 export async function saveRoad(record:Omit<SavedRoad,'result'>){return request('/segments/'+encodeURIComponent(record.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(record)})}
 export async function loadRoads(signal?:AbortSignal){return await request('/segments',{signal}) as SavedSurvey}
 export async function evaluatePredictions(body:unknown,signal?:AbortSignal){return await request('/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal}) as BackendEvaluation}

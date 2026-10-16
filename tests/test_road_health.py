@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.assessment import Defect, ScoreConfig, Inclination, assess
+from app.assessment import Defect, ScoreConfig, Inclination, AssessmentRequest, assess
 from app.detection import Tracker, demo_defects, demo_image, inspect
 from app.evaluation import EvaluationRequest, evaluate
 
@@ -230,3 +230,37 @@ def test_calibrated_camera_pose_and_invalid_rotation():
     assert result['reprojection_rmse_px'] < .01
     with pytest.raises(ValueError):
         inclination_result(reading.model_copy(update={'camera_to_world':[[0,0,0],[0,0,0],[0,0,0]]}))
+
+
+def test_perspective_camera_projects_visible_annotations_and_moves_along_route():
+    from app.driving_renderer import render_frame, camera_position
+    ds = demo_defects()
+    first, annotations, pose = render_frame(ds, .15, .3, .2)
+    later, later_annotations, later_pose = render_frame(ds, .45, .3, .2)
+    assert first.shape == later.shape == (450,800,3)
+    assert not np.array_equal(first,later)
+    assert pose['distance_m'] < later_pose['distance_m']
+    assert camera_position(.5,.3,.2)[0] == pytest.approx(.5)
+    assert annotations
+    assert all(d.id in {v.id for v in ds} for d in annotations+later_annotations)
+    assert all(d.depth_mm is None and d.depth_source is None for d in annotations)
+    assert all(0<=v<=1 for d in annotations for v in d.bbox)
+    no_damage, none, _ = render_frame([], .15)
+    assert none == []
+    assert not np.array_equal(first,no_damage)
+
+
+def test_perspective_drive_full_repair_preserves_camera_path_and_has_no_fixture_fallback():
+    from app.simulation import drive, DrivingRequest
+    ds = demo_defects()
+    result = drive(DrivingRequest(baseline=AssessmentRequest(defects=ds),
+                                  repaired=[d.id for d in ds],frames=5,path_curve=.15))
+    assert result['after']['remaining_defects'] == 0
+    assert result['after']['vibration_rms_proxy'] == 0
+    assert result['after']['score'] > result['before']['score']
+    assert 'Perspective car-mounted' in result['notice']
+    for before,after in zip(result['before']['frames'], result['after']['frames']):
+        assert before['camera_pose'] == after['camera_pose']
+        assert after['assessment']['defect_count'] == 0
+        assert after['provenance'] == 'demo'
+    assert any(frame['assessment']['defect_count']>0 for frame in result['before']['frames'])

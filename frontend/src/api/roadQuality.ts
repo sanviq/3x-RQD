@@ -5,6 +5,13 @@ import { request, ApiError, isRecord, finiteNumber } from './client';
 
 export function isAnalysisResponse(value: unknown): value is AnalysisResponse {
   if (!isRecord(value)) return false;
+  if(value.calibration!==undefined){
+    const c=value.calibration;
+    if(!isRecord(c)||c.validated!==false||typeof c.source!=='string'||typeof c.notice!=='string'||!isRecord(c.bounds)||
+      !(c.mm_per_original_pixel===null||(finiteNumber(c.mm_per_original_pixel)&&c.mm_per_original_pixel>0))||
+      !(c.scale_uncertainty_percent===null||(finiteNumber(c.scale_uncertainty_percent)&&c.scale_uncertainty_percent>=0&&c.scale_uncertainty_percent<100)))return false;
+    if(!Object.values(c.bounds).every(b=>b===null||(isRecord(b)&&finiteNumber(b.lower)&&finiteNumber(b.upper)&&b.lower>=0&&b.upper>=b.lower)))return false;
+  }
   if(value.defect_detection!==undefined&&!isDefectDetection(value.defect_detection))return false;
   if(value.analysis_region!==undefined){
     const r=value.analysis_region;
@@ -47,6 +54,7 @@ export async function analyzeRoad(input: AnalysisInput, signal?: AbortSignal): P
   body.append('capture_type', input.captureType ?? 'road_scene');
   if(input.roadQuad)body.append('road_quad',JSON.stringify(input.roadQuad));
   if (input.mmPerPixel !== undefined) body.append('mm_per_pixel', String(input.mmPerPixel));
+  if(input.scaleUncertaintyPercent!==undefined)body.append('scale_uncertainty_percent',String(input.scaleUncertaintyPercent));
   if (input.pitchDegrees !== undefined) body.append('pitch_degrees', String(input.pitchDegrees));
   body.append('include_overlay', String(input.includeOverlay));
   const value = await request('/analyze', { method: 'POST', body, signal });

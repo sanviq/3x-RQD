@@ -10,6 +10,7 @@ export type FeatureName = typeof featureNames[number];
 export interface HealthResponse { status: string; model_loaded: boolean; feature_version: string }
 export type CaptureType = 'road_scene' | 'surface_crop';
 export interface AnalysisResponse {
+  calibration?:{source:string;mm_per_original_pixel:number|null;scale_uncertainty_percent:number|null;validated:false;bounds:Record<string,{lower:number;upper:number}|null>;notice:string};
   analysis_region?:{road_quad:DefectPoint[]|null;processed_pixel_count:number;image_fraction:number;scope:string};
   defect_detection?:DefectDetection;
   capture_type?: CaptureType;
@@ -35,7 +36,7 @@ export interface AnalysisResponse {
   inclination: { degrees: number | null; source: 'user_supplied_sensor' | 'unavailable' };
   overlay_png_base64?: string;
 }
-export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; mmPerPixel?: number; pitchDegrees?: number; includeOverlay: boolean }
+export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; mmPerPixel?: number; scaleUncertaintyPercent?:number; pitchDegrees?: number; includeOverlay: boolean }
 export type Page = 'overview' | 'inspection' | 'network' | 'planner' | 'lab' | 'evaluation' | 'materials';
 export type Weights = [number, number, number, number];
 export interface DefectPoint {x:number;y:number}

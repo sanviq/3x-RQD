@@ -32,6 +32,7 @@ export function useAnalysis() {
 
   const [captureType, setCaptureType] = useState<CaptureType>('road_scene');
   const [scale, setScale] = useState('');
+  const [scaleUncertainty,setScaleUncertainty]=useState('');
   const [pitch, setPitch] = useState('');
   const [overlay, setOverlay] = useState(true);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
@@ -60,7 +61,7 @@ export function useAnalysis() {
   }, []);
   const select = async (file: File, videoFile?: File, frameTime=0) => {
     invalidate();
-    setScale(''); setPitch(''); setRoadQuad(videoFile || captureType === 'road_scene' ? sceneQuad : fullQuad);
+    setScale(''); setScaleUncertainty(''); setPitch(''); setRoadQuad(videoFile || captureType === 'road_scene' ? sceneQuad : fullQuad);
     if(videoFile)setCaptureType('road_scene');
     if (currentVideo.current?.file !== videoFile) {
       if (currentVideo.current) URL.revokeObjectURL(currentVideo.current.url);
@@ -90,6 +91,8 @@ export function useAnalysis() {
     if (!selected) nextErrors.image = 'Choose a road-surface image first.';
     if (parsedScale.error) nextErrors.scale = parsedScale.error;
     if (parsedPitch.error) nextErrors.pitch = parsedPitch.error;
+    const uncertainty=scaleUncertainty.trim()?Number(scaleUncertainty):undefined;
+    if(uncertainty!==undefined&&(!Number.isFinite(uncertainty)||uncertainty<0||uncertainty>=100||parsedScale.value===undefined))nextErrors.scaleUncertainty='Provide a scale and uncertainty from 0% to less than 100%.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length || !selected) return;
     const version = ++revision.current.value;
@@ -97,7 +100,7 @@ export function useAnalysis() {
     controller.current = requestController;
     setBusy(true); setResult(null); setNotice('');
     try {
-      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay }, requestController.signal);
+      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, scaleUncertaintyPercent:captureType==='surface_crop'?uncertainty:undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay }, requestController.signal);
       if (mounted.current && version === revision.current.value) { setResult(response); setNotice('Analysis complete. Results are ready.'); }
     } catch (error) {
       if (mounted.current && version === revision.current.value && !requestController.signal.aborted) setErrors({ request: (error as Error).message });
@@ -118,13 +121,14 @@ export function useAnalysis() {
     if (currentVideo.current) URL.revokeObjectURL(currentVideo.current.url);
     currentVideo.current = null; setVideoSource(null); setCaptureType('road_scene'); setRoadQuad(sceneQuad);
     if (currentImage.current) URL.revokeObjectURL(currentImage.current.url);
-    currentImage.current = null; setSelected(null); setScale(''); setPitch(''); setOverlay(true);
+    currentImage.current = null; setSelected(null); setScale(''); setScaleUncertainty(''); setPitch(''); setOverlay(true);
   };
   return {
     excludedDefects,toggleDefect:(id:string)=>setExcludedDefects(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]),
     detection,detectionBusy,detectionError,retryDetection:()=>setDetectionRevision(n=>n+1),
-    selected, videoSource, roadQuad, setRoadQuad:updateRoadQuad, captureType, setCaptureType: (value:CaptureType) => { invalidate(); setCaptureType(value); setRoadQuad(value === 'surface_crop' ? fullQuad : sceneQuad); setScale(''); }, scale, pitch, overlay, result, busy, validating, errors, notice, select, submit, reset,
+    selected, videoSource, roadQuad, setRoadQuad:updateRoadQuad, captureType, setCaptureType: (value:CaptureType) => { invalidate(); setCaptureType(value); setRoadQuad(value === 'surface_crop' ? fullQuad : sceneQuad); setScale(''); setScaleUncertainty(''); }, scale, pitch, overlay, result, busy, validating, errors, notice, select, submit, reset,
     setScale: (value: string) => { invalidate(); setScale(value); },
+    scaleUncertainty,setScaleUncertainty:(value:string)=>{invalidate();setScaleUncertainty(value)},
     setPitch: (value: string) => { invalidate(); setPitch(value); },
     setOverlay: (value: boolean) => { invalidate(); setOverlay(value); },
     cancel: () => { invalidate(); setNotice('Request cancelled. Server computation may still finish.'); },

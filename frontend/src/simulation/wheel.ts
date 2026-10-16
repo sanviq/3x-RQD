@@ -2,7 +2,7 @@ import { drawTriangle } from './image';
 import { projectTwin, renderOrigin, twinCamera } from './twin';
 import fragment from './wheel.frag?raw';
 import type { RenderOptions } from './render';
-import { clamp, groundHeight, pathX, tire } from './model';
+import { clamp, groundHeight, pathX } from './model';
 import { wheelPose } from './vehicle';
 import { wheelRoadTexture } from './wheelMaterial';
 
@@ -71,7 +71,7 @@ function hud(canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D,o:RenderOptio
   if(fallback)ctx.fillText('Canvas fallback · GPU rendering unavailable',24,72);
   ctx.fillStyle='#0c1822c9';ctx.fillRect(18,h-63,Math.min(w-36,470),45);
   ctx.font='12px Segoe UI, sans-serif';ctx.fillStyle='#e1e7e4';
-  ctx.fillText(o.config.speed+' km/h  ·  Spring travel '+(pose.travel*1000).toFixed(0)+' mm'+(w>=500?'  ·  Tire load '+(pose.compression/tire.staticDeflection).toFixed(2)+'×':''),30,h-36);
+  ctx.fillText(o.config.speed+' km/h  ·  Spring travel '+(pose.travel*1000).toFixed(0)+' mm'+(w>=500?'  ·  Tire load '+(pose.compression/pose.staticDeflection).toFixed(2)+'×':''),30,h-36);
   ctx.fillStyle='#aabbb9';ctx.font='11px Segoe UI, sans-serif';ctx.fillText('Simulated vehicle response · not measured telemetry',30,h-20);
   if(!o.guides){ctx.restore();return}
   // Labels project through the same camera as the shader and stay fixed to road coordinates.
