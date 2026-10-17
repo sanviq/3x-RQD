@@ -12,6 +12,7 @@ export interface HealthResponse { status: string; model_loaded: boolean; feature
 export type CaptureType = 'road_scene' | 'surface_crop';
 
 export interface RoadRegion {
+ road_polygon?:DefectPoint[];
  road_quad:[DefectPoint,DefectPoint,DefectPoint,DefectPoint];method:'provided_outline'|'declared_surface_crop'|'semantic_road_mask'|'opencv_road_appearance';
  status:'selected'|'review_required'|'needs_outline';requires_review:boolean;confidence:null;confidence_calibrated:false;
  image:{width:number;height:number};message:string;appearance_fraction:number|null;model?:{configured:boolean;used:boolean;reason:string}|null;
@@ -49,7 +50,7 @@ export interface AnalysisResponse {
   inclination: { degrees: number | null; source: 'user_supplied_sensor' | 'unavailable' };
   overlay_png_base64?: string;
 }
-export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; mmPerPixel?: number; scaleUncertaintyPercent?:number; pitchDegrees?: number; includeOverlay: boolean; detectorSettings?:RoadDetectorSettings }
+export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; roadPolygon?:DefectPoint[]; mmPerPixel?: number; scaleUncertaintyPercent?:number; pitchDegrees?: number; includeOverlay: boolean; detectorSettings?:RoadDetectorSettings }
 export type Page = 'overview' | 'inspection' | 'network' | 'planner' | 'lab' | 'evaluation' | 'materials';
 export type Weights = [number, number, number, number];
 export interface DefectPoint {x:number;y:number}

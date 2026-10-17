@@ -82,7 +82,7 @@ def _boundary_gaps(regions,sx,sy):
     return np.asarray(gaps)
 
 
-def extract_features(image: np.ndarray, mm_per_pixel: float | None = None, road_quad=None):
+def extract_features(image: np.ndarray, mm_per_pixel: float | None = None, road_quad=None, road_polygon=None):
     original_h, original_w = image.shape[:2]
     scale=min(1.,1536/max(original_h,original_w))
     width,height=round(original_w*scale),round(original_h*scale)
@@ -92,8 +92,8 @@ def extract_features(image: np.ndarray, mm_per_pixel: float | None = None, road_
     area_scale=sx*sy;linear_scale=np.sqrt(area_scale)
     roi=np.ones((height,width),np.uint8)
     native_roi=np.ones((original_h,original_w),np.uint8)
-    if road_quad is not None:
-        q=np.asarray([[p['x'],p['y']] if isinstance(p,dict) else p for p in road_quad],float)
+    if road_quad is not None or road_polygon is not None:
+        q=np.asarray([[p['x'],p['y']] if isinstance(p,dict) else p for p in (road_polygon if road_polygon is not None else road_quad)],float)
         roi[:]=0;native_roi[:]=0
         cv2.fillConvexPoly(roi,np.rint(q*[width-1,height-1]).astype(np.int32),1)
         cv2.fillConvexPoly(native_roi,np.rint(q*[original_w-1,original_h-1]).astype(np.int32),1)

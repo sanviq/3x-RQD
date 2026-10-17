@@ -69,7 +69,7 @@ export function Inspection({analysis,onSimulate}:{analysis:AnalysisController;on
         {result?<><div className="results-toolbar"><span><i className={'dot '+(sample?'lavender':'good')}/>{sample?'Example response · not a real assessment':'Analysis complete'}</span><button className="button secondary small" onClick={()=>downloadJson(sample?{demo:true,result}:result,sample?'demo-road-analysis':'road-analysis')}><Icon name="download" size={15}/>Download JSON</button></div>{sample&&<AnalysisResults result={result} demo/>}</>:analysis.busy?<Note>Analyzing your uploaded road area and generating the diagnostic overlay…</Note>:<Note>Surface analysis reports aggregate candidates and visible texture. Verified pothole classes, metal content, image-derived slope, and material properties require additional models or measurements.</Note>}
       </div>
     </div>
-    <DetectionWorkspace image={analysis.selected?.file} scale={analysis.scale} pitch={analysis.pitch}/>
+    <DetectionWorkspace image={analysis.selected?.file} scale={analysis.scale} pitch={analysis.pitch} shared={analysis} onSimulate={onSimulate}/>
     <CountryComparison/>
   </div>;
 }

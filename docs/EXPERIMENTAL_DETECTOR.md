@@ -2,6 +2,10 @@
 
 The completed YOLOv8n checkpoint is available for **explicit experimental preview**, even though its recall failed the automatic qualification gate. Preview does not certify the model or change the automatic qualification registry.
 
+The lower **Road-defect analysis** viewer now reuses the main inspection's immutable detection snapshot by default. Counts, retained IDs, exclusions, outlines and the provisional road score match. The assessment and overlay backend accepts those regions without running YOLO again. **Compare YOLO separately** deliberately opens a separate experiment; **Return to shared inspection** restores the selected evidence. Shared imagery keeps original normalized coordinates and reports unmeasured physical dimensions as unavailable.
+
+Automatic analysis uses a multi-point road-shaped boundary so a narrow trapezoid does not discard side areas. The original image is retained; aspect-preserving preview resizing does not crop its sides. Four-corner projection remains schematic. Editing a corner switches to the explicitly chosen manual region.
+
 ## On the configured local machine
 
 1. Open **Surface inspection** and select your road photo.

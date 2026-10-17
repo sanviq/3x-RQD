@@ -63,6 +63,7 @@ export async function analyzeRoad(input: AnalysisInput, signal?: AbortSignal): P
   body.append('image', input.image);
   body.append('capture_type', input.captureType ?? 'road_scene');
   if(input.roadQuad)body.append('road_quad',JSON.stringify(input.roadQuad));
+  if(input.roadPolygon)body.append('road_polygon',JSON.stringify(input.roadPolygon));
   if (input.mmPerPixel !== undefined) body.append('mm_per_pixel', String(input.mmPerPixel));
   if(input.scaleUncertaintyPercent!==undefined)body.append('scale_uncertainty_percent',String(input.scaleUncertaintyPercent));
   if (input.pitchDegrees !== undefined) body.append('pitch_degrees', String(input.pitchDegrees));

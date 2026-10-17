@@ -113,7 +113,7 @@ def _calculate(detection,metadata,excluded,cfg,config_source):
     h,w=int(detection["image"]["height"]),int(detection["image"]["width"])
     if min(w,h)<64 or w*h>20_000_000:raise ValueError("Unsupported native score raster dimensions.")
     quad=parse_quad(detection["road_quad"])
-    road=np.zeros((h,w),np.uint8);cv2.fillPoly(road,[_geometry(quad,w,h)],255)
+    road=np.zeros((h,w),np.uint8);cv2.fillPoly(road,[_geometry(detection.get("road_polygon",quad),w,h)],255)
     area=int(np.count_nonzero(road))
     if area<64:raise ValueError("Align a larger visible road area before scoring (at least 64 native pixels).")
     ids=[d["id"] for d in detection["defects"]]

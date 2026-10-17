@@ -24,10 +24,10 @@ def _quad_from_mask(mask):
 
 def identify_road(image,capture_type="road_scene",road_quad=None):
     h,w=image.shape[:2]
-    def result(q,method,status,message,model=None,coverage=None):
+    def result(q,method,status,message,model=None,coverage=None,surface=None):
         return {"road_quad":[{"x":float(x),"y":float(y)} for x,y in q],"method":method,"status":status,
                 "requires_review":method!="provided_outline","confidence":None,"confidence_calibrated":False,
-                "image":{"width":w,"height":h},"message":message,"model":model,"appearance_fraction":coverage}
+                "image":{"width":w,"height":h},"message":message,"model":model,"appearance_fraction":coverage,"road_polygon":surface or [{"x":float(x),"y":float(y)} for x,y in q]}
     if road_quad is not None:
         return result(parse_quad(road_quad),"provided_outline","selected","The supplied road outline determines analysis. Correct it if it includes scenery.")
     if capture_type=="surface_crop":
@@ -75,4 +75,11 @@ def identify_road(image,capture_type="road_scene",road_quad=None):
     # A nearly full-frame neutral texture can be a road close-up or a non-road object.
     note="Road appearance proposed from actual pixels. Confirm the outline: neutral walls, vehicles, shadows and gravel can be confused with asphalt. This is not validated semantic recognition."
     if method=="semantic_road_mask":note="The configured model proposed a road mask. Its four-corner approximation must be reviewed; depth and uniform scale are not inferred."
-    return result(q,method,"review_required",note,model,area)
+    contours,_=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    hull=cv2.convexHull(max(contours,key=cv2.contourArea))
+    hull=cv2.approxPolyDP(hull,max(1,min(sw,sh)*.003),True).reshape(-1,2).astype(float)/[sw-1,sh-1]
+    surface=[{'x':float(x),'y':float(y)} for x,y in hull]
+    x0,y0=hull.min(axis=0);x1,y1=hull.max(axis=0)
+    q=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]
+    note+=' Analysis follows the full road-shaped boundary, including visible side areas. The four handles define a schematic plane; editing switches to a manual four-corner boundary.'
+    return result(q,method,"review_required",note,model,area,surface)

@@ -53,7 +53,7 @@ def test_automatic_photo_review_retains_major_cavities_without_scene_leakage():
     image=cv2.imread(str(PHOTO))
     proposal=identify_road(image)
     # Human-inspected foreground regions, used only as regression examples.
-    result=detect_defects(image,proposal['road_quad'])
+    result=detect_defects(image,proposal['road_quad'],road_polygon=proposal['road_polygon'])
     def contains(d,x,y):
         polygon=np.asarray([[p['x']*639,p['y']*426] for p in d['polygon']],np.float32)
         return cv2.pointPolygonTest(polygon,(x,y),False)>=0
@@ -61,7 +61,7 @@ def test_automatic_photo_review_retains_major_cavities_without_scene_leakage():
         assert any(d['kind']=='Pothole' and contains(d,x,y) for d in result['defects'])
     assert any(d['kind']=='Crack' for d in result['defects'])
     assert not any(contains(d,320,50) for d in result['defects'])
-    assert proposal['road_quad'][1]['x']-proposal['road_quad'][0]['x']<.5
+    assert len(proposal['road_polygon'])>4
 
 
 def test_original_and_road_polygons_round_trip():

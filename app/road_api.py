@@ -1,5 +1,6 @@
 """Local Road Health API. No uploaded media are persisted after processing."""
 import json
+import hashlib
 import secrets
 import tempfile
 import threading
@@ -11,8 +12,8 @@ import cv2
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 from pydantic import Field
-from app.assessment import (AssessmentRequest, Inclination, OptimizeRequest, SafeModel, ScoreConfig, assess, inclination_result, optimize)
-from app.detection import Tracker, demo_defects, demo_image, survey_defects, inspect, model_status
+from app.assessment import (AssessmentRequest, Defect, Inclination, OptimizeRequest, SafeModel, ScoreConfig, assess, inclination_result, optimize)
+from app.detection import Tracker, demo_defects, demo_image, survey_defects, inspect, model_status, visuals, encode
 from app.evaluation import EvaluationRequest, evaluate
 from app.features import MAX_BYTES, decode_image
 
@@ -145,6 +146,52 @@ async def inspect_upload(
                 return inspect(source, tracker=session['tracker'], **kwargs)
         return inspect(source, **kwargs)
     return await run_in_threadpool(safe_call, run)
+
+
+@router.post('/inspect-reviewed')
+async def inspect_reviewed(image:UploadFile=File(...),score_token:str=Form(...),excluded_json:str=Form('[]'),
+                           mm_per_pixel:float|None=Form(None,gt=0,le=1000),inclination_json:str=Form('{}')):
+    """Render the immutable selected detection snapshot, without running another detector."""
+    from app.road_quality_score import snapshot,calculate,ScoreSettings
+    record=snapshot(score_token)
+    try:data=await image.read(MAX_BYTES+1)
+    finally:await image.close()
+    if len(data)>MAX_BYTES:raise HTTPException(413,'Image exceeds 12 MiB.')
+    if hashlib.sha256(data).hexdigest()!=record['metadata']['sha256']:
+        raise HTTPException(422,'The detection snapshot belongs to a different image. Detect again.')
+    def run():
+        start=time.perf_counter();source=decode_image(data)
+        excluded=json.loads(excluded_json)
+        if not isinstance(excluded,list) or len(excluded)!=len(set(excluded)):raise ValueError('Excluded IDs must be a unique list.')
+        scored=calculate(record['detection'],record['metadata'],excluded,ScoreSettings.model_validate(record['config']),record['config_source'])
+        ds=[];mapping={'Pothole':'pothole','Crack':'crack','Depression':'uneven_surface','Uneven surface':'uneven_surface'}
+        for d in record['detection']['defects']:
+            if d['id'] in excluded:continue
+            p=[(v['x'],v['y']) for v in d['polygon']];xs,ys=zip(*p)
+            ds.append(Defect(id=d['id'],class_name=mapping[d['kind']],detection_label=d.get('detection_label') or d['kind'],
+                detection_code=d.get('detection_code'),confidence=d['confidence'],severity=d['severity'],
+                bbox=(min(xs),min(ys),max(xs),max(ys)),polygon=p))
+        h,w=source.shape[:2];assessment=assess(ds,w,h,mm_per_pixel,Inclination.model_validate_json(inclination_json))
+        assessment.update(score=scored['score'],band=scored['rating'],scoring_method='road-quality-v1',
+            damaged_area_percent=round(scored['summary']['affected_road_percent'],2),
+            density_per_megapixel=round(len(ds)/(scored['summary']['visible_road_pixel_area']/1e6),2),
+            penalties={c['id']:c['points'] for c in scored['components']},
+            explanation='Same selected detection snapshot and provisional score as the main inspection. '+scored['score_scope'],
+            limitations=scored['uncertainty'])
+        for d in assessment['defects']:d['area_method']='approximate_visual_candidate_polygon'
+        scale=min(1.,1600/max(w,h));display=cv2.resize(source,(round(w*scale),round(h*scale))) if scale<1 else source
+        images=visuals(display,ds)
+        from app.defects import defect_overlay
+        images['detections']=encode(defect_overlay(display,{'defects':[d for d in record['detection']['defects'] if d['id'] not in excluded]}))
+        elapsed=(time.perf_counter()-start)*1000
+        return {'provenance':'opencv' if record['detection']['method']=='opencv_multiscale_contours' else 'model',
+            'notice':'Shared inspection evidence: same retained IDs, outlines and provisional score as above. No second detector was run. Shapes are visual estimates, not measured depth or validated segmentation.',
+            'assessment':assessment,'quality':record['metadata']['quality'],'images':images,
+            'width':w,'height':h,'processed_width':display.shape[1],'processed_height':display.shape[0],
+            'timing':{'inference_ms':0,'pipeline_ms':round(elapsed,2),'pipeline_fps':round(1000/max(elapsed,.001),2),'includes':'Reuse selected evidence; assessment and preview preparation. No model inference.'},
+            'unique_tracks':len(ds),'assessment_confidence':assessment['average_confidence'],'repeat_capture':record['metadata']['quality']['repeat_capture'],
+            'effect':'none','synthetic_stress_test':False,'source_snapshot':score_token,'retained_ids':[d.id for d in ds]}
+    return await run_in_threadpool(safe_call,run)
 
 
 @router.post('/video')

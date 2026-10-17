@@ -10,7 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.features import MAX_BYTES, FEATURE_VERSION, decode_image, extract_features
 from app.scoring import load_model, score
-from app.defects import DETECTOR_VERSION, parse_quad
+from app.defects import parse_surface_polygon, DETECTOR_VERSION, parse_quad
 from app.integrated_detector import detect_defects
 from app.calibration import calibration_metadata
 from app.road_region import identify_road
@@ -38,30 +38,33 @@ def health():
             "surface_model_error": getattr(app.state,"model_error",None)}
 
 
-def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None,detector_mode='auto'):
+def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None,detector_mode='auto',road_polygon=None):
     region=identify_road(decoded,road_quad=road_quad)
-    detected=detect_defects(decoded,region["road_quad"],confidence,resolution,mode=detector_mode)
+    coverage=parse_surface_polygon(road_polygon or region.get('road_polygon'),region['road_quad'])
+    detected=detect_defects(decoded,region["road_quad"],confidence,resolution,mode=detector_mode,road_polygon=coverage)
+    region["road_polygon"]=[{"x":x,"y":y} for x,y in coverage]
     detected["road_region"]=region
     h,w=decoded.shape[:2]
     roi=np.zeros((h,w),np.uint8)
-    cv2.fillConvexPoly(roi,np.rint([[p["x"]*(w-1),p["y"]*(h-1)] for p in region["road_quad"]]).astype(np.int32),1)
+    cv2.fillConvexPoly(roi,np.rint([[p["x"]*(w-1),p["y"]*(h-1)] for p in [{"x":x,"y":y} for x,y in coverage]]).astype(np.int32),1)
     pixels=cv2.cvtColor(decoded,cv2.COLOR_BGR2GRAY)[roi>0]
     if not len(pixels) or pixels.std()<2 or np.mean(pixels<5)>.98 or np.mean(pixels>250)>.98:
         return {**detected,"road_quality_score":None,"score_error":"No condition score: the selected road has no usable tonal detail. Refocus, correct exposure and use the original camera image. Pixel brightness and area descriptors remain available."}
     return attach_score(detected,decoded,data)
 
 
-def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None, detector_mode='auto', confidence=None, resolution=None):
+def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None, detector_mode='auto', confidence=None, resolution=None, road_polygon=None):
     if capture_type != "surface_crop":
         mm_per_pixel = None
     decoded = decode_image(data)
     region=identify_road(decoded,capture_type,road_quad)
     road_quad=region["road_quad"]
-    result, overlay = extract_features(decoded, mm_per_pixel, road_quad)
+    coverage=parse_surface_polygon(road_polygon or region.get("road_polygon"),road_quad)
+    result, overlay = extract_features(decoded, mm_per_pixel, road_quad, coverage)
     result["road_region"]=region
     result['calibration']=calibration_metadata(result['physical_measurements'],mm_per_pixel,scale_uncertainty_percent)
     try:
-        result["defect_detection"] = scored_detection(decoded, data, road_quad, confidence, resolution, detector_mode)
+        result["defect_detection"] = scored_detection(decoded, data, road_quad, confidence, resolution, detector_mode, coverage)
     except ValueError as exc:
         # Keep real texture measurements when the explicitly selected detector fails.
         # Do not substitute a different detector or a condition score.
@@ -107,6 +110,7 @@ async def analyze_road(
     include_overlay: bool = Form(False),
     capture_type: Literal["road_scene", "surface_crop"] = Form("road_scene"),
     road_quad: str | None = Form(None),
+    road_polygon: str | None = Form(None),
     scale_uncertainty_percent: float | None = Form(None, ge=0, lt=100),
     detector_mode: Literal['auto','model','opencv'] = Form('auto'),
     confidence: float | None = Form(None, ge=0, le=1),
@@ -121,7 +125,7 @@ async def analyze_road(
     try:
         if scale_uncertainty_percent is not None and (capture_type!='surface_crop' or mm_per_pixel is None):
             raise ValueError('Scale uncertainty requires a surface crop with mm_per_pixel.')
-        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad) if road_quad is not None else None,scale_uncertainty_percent,detector_mode,confidence,resolution)
+        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad) if road_quad is not None else None,scale_uncertainty_percent,detector_mode,confidence,resolution,road_polygon)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -130,6 +134,7 @@ async def analyze_road(
 async def detect_uploaded_defects(
     image: UploadFile = File(...),
     road_quad: str | None = Form(None),
+    road_polygon: str | None = Form(None),
     confidence: float | None = Form(None, ge=0, le=1),
     resolution: int | None = Form(None, ge=320, le=1280),
     detector_mode: Literal['auto','model','opencv'] = Form('auto'),
@@ -143,7 +148,7 @@ async def detect_uploaded_defects(
         raise HTTPException(413, "Image exceeds the 12 MiB upload limit.")
     try:
         quad = parse_quad(road_quad) if road_quad is not None else None
-        return await run_in_threadpool(lambda: scored_detection(decode_image(data), data, quad, confidence, resolution, detector_mode))
+        return await run_in_threadpool(lambda: scored_detection(decode_image(data), data, quad, confidence, resolution, detector_mode,road_polygon))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

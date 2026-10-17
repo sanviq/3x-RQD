@@ -24,8 +24,9 @@ export function isDefectDetection(v:unknown):v is DefectDetection {
         : d.provenance==='yolo_prediction'&&['D00','D10','D20','D40'].includes(String(d.detection_code))&&d.kind===(d.detection_code==='D40'?'Pothole':'Crack')&&typeof d.detection_label==='string'&&['bounding_box_schematic','model_segmentation'].includes(String(d.geometry_source)));
   });
 }
-export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal,settings?:RoadDetectorSettings):Promise<DefectDetection> {
+export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal,settings?:RoadDetectorSettings,roadPolygon?:{x:number;y:number}[]):Promise<DefectDetection> {
   const body=new FormData();body.append('image',image);body.append('road_quad',JSON.stringify(quad));
+  if(roadPolygon)body.append('road_polygon',JSON.stringify(roadPolygon));
   if(settings){body.append('detector_mode',settings.mode);body.append('confidence',String(settings.confidence));body.append('resolution',String(settings.resolution))}
   const value=await request('/detect-defects',{method:'POST',body,signal},45000);
   if(!isDefectDetection(value))throw new ApiError('The backend did not return compatible defect geometry. Restart the updated API.');

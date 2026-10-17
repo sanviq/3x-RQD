@@ -18,16 +18,16 @@ def _unique_defects(defects):
     return kept
 
 
-def _detect_defects(image, road_quad=None, confidence=None, resolution=None, mode='auto'):
+def _detect_defects(image, road_quad=None, confidence=None, resolution=None, mode='auto',road_polygon=None):
     if mode not in ('auto','model','opencv'):
         raise ValueError('Choose auto, model or opencv detection.')
     selection=selected_model(detection.MODEL_PATH,allow_experimental=True) if mode=='model' else selected_model(detection.MODEL_PATH)
     if mode=='opencv':
-        return opencv_candidates(image,road_quad)
+        return opencv_candidates(image,road_quad,road_polygon=road_polygon)
     if not selection['configured']:
         if mode=='model':
             raise ValueError('No trained road detector is available. Configure the saved experimental checkpoint or choose Untrained visual candidates.')
-        result=opencv_candidates(image,road_quad)
+        result=opencv_candidates(image,road_quad,road_polygon=road_polygon)
         result['model_status']=detection.model_status()
         result['warnings'].append('No accepted trained detector is active. These are OpenCV candidates, not YOLO predictions.')
         return result
@@ -95,14 +95,14 @@ def _detect_defects(image, road_quad=None, confidence=None, resolution=None, mod
                         'No detections does not establish a healthy road.']+quality['flags']}
 
 
-def detect_defects(image,road_quad=None,confidence=None,resolution=None,mode='auto'):
+def detect_defects(image,road_quad=None,confidence=None,resolution=None,mode='auto',road_polygon=None):
     try:
-        return _detect_defects(image,road_quad,confidence,resolution,mode)
+        return _detect_defects(image,road_quad,confidence,resolution,mode,road_polygon)
     except (ValueError,RuntimeError,OSError,ImportError,AttributeError,cv2.error) as exc:
         if mode=='model':
             raise ValueError('Trained detector could not run: '+str(exc)[:250]) from exc
         # A broken optional model must not discard valid surface measurements.
-        result=opencv_candidates(image,road_quad)
+        result=opencv_candidates(image,road_quad,road_polygon=road_polygon)
         result['model_failure']={'type':type(exc).__name__,'message':str(exc)[:250],'fallback':'opencv_multiscale_contours'}
         result['warnings'].append('Road model could not run: '+str(exc)[:250]+'. Actual OpenCV candidates are shown; check the weights, dependencies and supported classes.')
         return result

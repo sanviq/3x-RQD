@@ -37,12 +37,12 @@ export function useAnalysis() {
     const abort=new AbortController();let cancelled=false;
     setDetectionBusy(true);
     const timer=window.setTimeout(()=>{
-      detectRoadDefects(selected.file,roadQuad,abort.signal,detectorSettings).then(value=>{if(!cancelled){setDetection(value);setDetectionSource({file:selected.file,quad:JSON.stringify(roadQuad),revision:detectionRevision})}})
+      detectRoadDefects(selected.file,roadQuad,abort.signal,detectorSettings,roadRegion?.road_polygon).then(value=>{if(!cancelled){setDetection(value);setDetectionSource({file:selected.file,quad:JSON.stringify(roadQuad),revision:detectionRevision})}})
         .catch(error=>{if(!cancelled&&!abort.signal.aborted)setDetectionError((error as Error).message)})
         .finally(()=>{if(!cancelled)setDetectionBusy(false)});
     },250);
     return()=>{cancelled=true;window.clearTimeout(timer);abort.abort()};
-  },[selected,roadQuad,detectionRevision,regionBusy,detectorSettings]);
+  },[selected,roadQuad,detectionRevision,regionBusy,detectorSettings,roadRegion?.road_polygon]);
 
 
   const [scoreRecord,setScoreRecord]=useState<{key:string;value:RoadQualityScore}|null>(null);
@@ -152,7 +152,7 @@ export function useAnalysis() {
     controller.current = requestController;
     setBusy(true); setResult(null); setNotice('');
     try {
-      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, scaleUncertaintyPercent:captureType==='surface_crop'?uncertainty:undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay, detectorSettings }, requestController.signal);
+      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, scaleUncertaintyPercent:captureType==='surface_crop'?uncertainty:undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay, roadPolygon:roadRegion?.road_polygon, detectorSettings }, requestController.signal);
       if (mounted.current && version === revision.current.value) { setResult(response); setNotice('Analysis complete. Results are ready.'); }
     } catch (error) {
       if (mounted.current && version === revision.current.value && !requestController.signal.aborted) setErrors({ request: (error as Error).message });

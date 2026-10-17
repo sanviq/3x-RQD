@@ -14,7 +14,7 @@ export interface DefectAssessment {
   configuration:Record<string,number>; explanation:string; limitations:string[]; validated:false;
 }
 export interface DetectionResult {
-  provenance:'demo'|'model'; notice:string; assessment:DefectAssessment;
+  provenance:'demo'|'model'|'opencv'; notice:string; assessment:DefectAssessment;
   quality:{flags:string[];repeat_capture:boolean;laplacian_variance:number;overexposed_fraction:number;dark_fraction:number};
   images:{original:string;detections:string;segmentation:string;heatmap:string;previews:Record<string,string>};
   width:number;height:number;processed_width:number;processed_height:number;
@@ -40,7 +40,7 @@ export interface BackendEvaluation {
 function validateResult(value:unknown):DetectionResult {
   if(!isRecord(value)||!isRecord(value.assessment)||!isRecord(value.images)||!isRecord(value.timing)||
     !Array.isArray(value.assessment.defects)||!Array.isArray(value.quality&&isRecord(value.quality)?value.quality.flags:null)||
-    !['demo','model'].includes(String(value.provenance))||!finiteNumber(value.width)||!finiteNumber(value.height)||
+    !['demo','model','opencv'].includes(String(value.provenance))||!finiteNumber(value.width)||!finiteNumber(value.height)||
     !(value.assessment.score===null||finiteNumber(value.assessment.score)))throw new ApiError('The detector returned an incompatible response.');
   for(const key of ['original','detections','segmentation','heatmap'])if(typeof value.images[key]!=='string')throw new ApiError('Detector evidence is incomplete.');
   return value as unknown as DetectionResult;
@@ -78,3 +78,5 @@ export async function runDriving(body:unknown,signal?:AbortSignal){return await 
 export async function saveRoad(record:Omit<SavedRoad,'result'>){return request('/segments/'+encodeURIComponent(record.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(record)})}
 export async function loadRoads(signal?:AbortSignal){return await request('/segments',{signal}) as SavedSurvey}
 export async function evaluatePredictions(body:unknown,signal?:AbortSignal){return await request('/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal}) as BackendEvaluation}
+
+export async function inspectReviewed(image:File,token:string,excluded:string[],signal?:AbortSignal){const body=new FormData();body.append('image',image);body.append('score_token',token);body.append('excluded_json',JSON.stringify(excluded));return validateResult(await request('/inspect-reviewed',{method:'POST',body,signal},60000))}

@@ -48,7 +48,7 @@ describe('automatic upload detection lifecycle',()=>{
     const {result}=renderHook(()=>useAnalysis());await select(result);
     expect(result.current.detection).toBeNull();expect(result.current.detectionBusy).toBe(true);
     await dispatch();
-    expect(detectRoadDefects).toHaveBeenCalledWith(result.current.selected!.file,result.current.roadQuad,expect.any(AbortSignal),{mode:'opencv',confidence:.35,resolution:768});
+    expect(detectRoadDefects).toHaveBeenCalledWith(result.current.selected!.file,result.current.roadQuad,expect.any(AbortSignal),{mode:'opencv',confidence:.35,resolution:768},undefined);
     expect(result.current.detection).toBe(detection);expect(result.current.detectionBusy).toBe(false);
   });
   it('aborts old media and ignores its late geometry',async()=>{

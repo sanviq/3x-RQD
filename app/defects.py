@@ -33,6 +33,17 @@ def parse_quad(value):
         raise ValueError("road_quad must contain four convex clockwise normalized image points.") from None
 
 
+def parse_surface_polygon(value,default):
+    if value is None:return parse_quad(default)
+    try:
+        pts=json.loads(value) if isinstance(value,str) else value
+        p=np.asarray([[v['x'],v['y']] if isinstance(v,dict) else v for v in pts],np.float32)
+        if p.ndim!=2 or p.shape[1]!=2 or not 3<=len(p)<=64 or not np.isfinite(p).all() or np.any(p<0) or np.any(p>1):raise ValueError()
+        if not cv2.isContourConvex(p.reshape(-1,1,2)) or abs(cv2.contourArea(p))<.0005:raise ValueError()
+        return p.tolist()
+    except (ValueError,TypeError,KeyError,IndexError):raise ValueError('Road surface polygon must have 3–64 convex normalized points.') from None
+
+
 def _overlap(a, b):
     x0, y0 = max(a[0], b[0]), max(a[1], b[1])
     x1, y1 = min(a[0] + a[2], b[0] + b[2]), min(a[1] + a[3], b[1] + b[3])
@@ -51,7 +62,7 @@ def _candidate_overlap(a,b):
     return np.count_nonzero(left&right_mask)/max(1,min(cv2.contourArea(a['_contour']),cv2.contourArea(b['_contour'])))
 
 
-def detect_defects(image, road_quad=None, *, native_resolution=False):
+def detect_defects(image, road_quad=None, *, native_resolution=False, road_polygon=None):
     q = np.asarray(parse_quad(road_quad), np.float32)
     oh, ow = image.shape[:2]
     scale = 1. if native_resolution else min(1., 1024/max(ow, oh))
@@ -60,7 +71,8 @@ def detect_defects(image, road_quad=None, *, native_resolution=False):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     smooth = cv2.GaussianBlur(gray, (3, 3), 0)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    polygon = np.round(q * [w-1, h-1]).astype(np.int32)
+    coverage=np.asarray(parse_surface_polygon(road_polygon,q),np.float32)
+    polygon = np.round(coverage * [w-1, h-1]).astype(np.int32)
     roi = np.zeros((h, w), np.uint8)
     cv2.fillConvexPoly(roi, polygon, 255)
     # A small inset excludes road/vegetation borders and incomplete image-edge candidates.
@@ -75,7 +87,7 @@ def detect_defects(image, road_quad=None, *, native_resolution=False):
     result = {"version": DETECTOR_VERSION, "method": "opencv_multiscale_contours",
               "coordinate_system": "normalized_exif_oriented_original",
               "road_quad": [{"x": float(x), "y": float(y)} for x, y in q],
-              "image": {"width": ow, "height": oh}, "defects": [], "warnings": notes,
+              "image": {"width": ow, "height": oh}, "road_polygon":[{"x":float(x),"y":float(y)} for x,y in coverage], "defects": [], "warnings": notes,
               "confidence_calibrated": False, "requires_review": True}
     if len(region) < 64 or float(region.std()) < 5 or cv2.Laplacian(smooth, cv2.CV_32F).var() < 4:
         result["warnings"].append("Insufficient visual detail: no defect candidates returned.")
@@ -170,7 +182,7 @@ def detect_defects(image, road_quad=None, *, native_resolution=False):
         short, long = sorted(rect[1])
         elongation = long/max(short, 1)
         line_width=2*area/max(cv2.arcLength(contour, True),1)
-        is_crack = not water and elongation > (18 if cavity else 7) and line_width < max(3.5,minimum*.014) and long > minimum*.045
+        is_crack = not water and elongation > (30 if cavity else 7) and line_width < max(3.5,minimum*.014) and long > minimum*.045
         if line_only and not is_crack:
             continue
         if not is_crack and (area < max(100, roi_area*.0007) or min(bw, bh) < 7):
@@ -196,6 +208,8 @@ def detect_defects(image, road_quad=None, *, native_resolution=False):
                        float(blackhat[mask > 0].mean()))
         edge_strength = float(np.mean(blackhat[boundary > 0]))
         solidity = area/max(cv2.contourArea(cv2.convexHull(contour)), 1)
+        if water and solidity<.80:
+            continue
         if water:
             contrast = max(contrast, float(inside.mean()-outside.mean()))
         if contrast < 10 or solidity < .20 or (area > roi_area*.055 and inside.std() < 9):
