@@ -60,9 +60,9 @@ export default function App(){
         </header>
         <div className="service-strip" role="status"><span><i className={'dot '+(health.loading?'lavender':health.health?'good':'offline')}/>{healthLabel}</span>{health.health?<small>{health.health.feature_version} · experimental assessment</small>:<button onClick={health.retry} disabled={health.loading} className="text-button">{health.loading?'Checking connection':'Retry connection'}<Icon name="refresh" size={12}/></button>}</div>
         <main id="main-content">
-          {page==='overview'&&<InspectionDashboard roads={roadsState} onNavigate={navigate}/>}
+          {page==='overview'&&<InspectionDashboard roads={roadsState} analysis={analysis} onNavigate={navigate}/>}
           {page==='inspection'&&<><Inspection analysis={analysis} onSimulate={()=>navigate('lab')}/>{analysis.selected&&<section className="panel"><h2>Link this inspection to a real road</h2><p>Choose its location on the map and confirm the road segment. Saving is explicit; no location is inferred from the image.</p><button className="button primary" onClick={()=>navigate('network')}>Choose road on map</button></section>}</>}
-          {page==='network'&&<InspectionRoadNetwork roads={roadsState} analysis={analysis} onInspect={()=>navigate('inspection')}/>}
+          {page==='network'&&<InspectionRoadNetwork roads={roadsState} analysis={analysis} onInspect={()=>navigate('inspection')} onOverview={()=>navigate('overview')}/>}
           {page==='planner'&&<EvidenceRepairPlanner roads={roadsState} onNetwork={()=>navigate('network')}/>}
           {labOpened&&<div hidden={page!=='lab'}>{analysis.selected?<ScenarioLab active={page==='lab'} demo={false} selected={roadsState.selected} onNavigate={navigate} analysis={analysis}/>:<section className="panel"><h1>Scenario lab</h1><p>Upload a road capture to simulate its detected surface. No sample defects are substituted.</p><button className="button primary" onClick={()=>navigate('inspection')}>Upload road capture</button></section>}</div>}
           {page==='evaluation'&&<Evaluation/>}
