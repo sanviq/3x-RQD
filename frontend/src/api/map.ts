@@ -14,7 +14,7 @@ export interface NetworkSummary {
  represented_length_percent:number;average_quality:number|null;comparable_configurations:boolean;defect_count:number|null;
  by_type:Record<string,number>;by_severity:Record<string,number>;needs_attention:number;provisional:true;methodology:string;
 }
-export interface MapNetwork {segments:MappedSegment[];summary:NetworkSummary;attribution:string}
+export interface MapNetwork {segments:MappedSegment[];summary:NetworkSummary;attribution:string;geometry_provider?:string;provider_notice?:string}
 export interface MapConfig {center:[number,number];location_label:string;tile_url:string;tile_attribution:string;max_zoom:number;notice:string}
 export interface MapBounds {south:number;west:number;north:number;east:number}
 export interface SearchPlace {label:string;latitude:number;longitude:number}
@@ -36,7 +36,7 @@ export function isMapNetwork(v:unknown):v is MapNetwork {
  return ['segment_count','inspected_segments','not_inspected_segments','mapped_length_m','represented_segment_length_m','represented_length_percent','needs_attention'].every(k=>finiteNumber(s[k])&&Number(s[k])>=0)&&s.segment_count===v.segments.length&&s.inspected_segments===v.segments.filter(x=>x.inspection!==null).length&&Number(s.inspected_segments)+Number(s.not_inspected_segments)===s.segment_count&&(s.average_quality===null||finiteNumber(s.average_quality)&&s.average_quality>=0&&s.average_quality<=100)&&(s.defect_count===null||Number.isSafeInteger(s.defect_count)&&Number(s.defect_count)>=0)&&s.provisional===true&&typeof s.methodology==='string';
 }
 async function mapRequest(path:string,init:RequestInit={},timeout=45000){
- try{return await request('/map'+path,init,timeout)}catch(e){if(e instanceof ApiError&&e.status===503)throw new ApiError('Map provider unavailable. Saved inspections are preserved. Retry later or check the configured provider.',503);throw e}
+ try{return await request('/map'+path,init,timeout)}catch(e){if(e instanceof ApiError&&e.status===503)throw new ApiError('Road lines could not load from the map providers. Zoom in and press “Load roads in view” to retry. Saved inspections are preserved.',503);throw e}
 }
 export async function getMapConfig(signal?:AbortSignal):Promise<MapConfig>{
  const v=await mapRequest('/config',{signal});

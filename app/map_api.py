@@ -74,7 +74,7 @@ def configured_url(name, default):
     return value
 
 
-def remote_json(provider, url, fields, ttl, post=False):
+def remote_json(provider, url, fields, ttl, post=False, timeout=30):
     """Only admin-configured URLs; serialized, shared SQLite throttle, bounded cache/body."""
     key = (provider, url, json.dumps(fields, sort_keys=True))
     with provider_slot():
@@ -85,7 +85,7 @@ def remote_json(provider, url, fields, ttl, post=False):
         with database() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT used FROM provider_clock WHERE key=?", (provider,)).fetchone()
-            interval = 2 if provider == "overpass" else 1.1
+            interval = 2 if provider in ("overpass", "osm") else 1.1
             if row and time.time() - row[0] < interval:
                 raise HTTPException(429, "Map service is busy. Wait before trying again.", headers={"Retry-After": str(max(2,math.ceil(interval-time.time()+row[0])))})
             db.execute("INSERT OR REPLACE INTO provider_clock VALUES (?,?)", (provider, time.time()))
@@ -99,12 +99,12 @@ def remote_json(provider, url, fields, ttl, post=False):
         request = urllib.request.Request(url if post else url + ("&" if "?" in url else "?") + encoded,
                                          data=encoded.encode() if post else None, headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
                 body = response.read(8 * 1024 * 1024 + 1)
             if len(body) > 8 * 1024 * 1024:
                 raise HTTPException(413, "Road response is too large. Zoom into a smaller area.")
             result = json.loads(body)
-            if not isinstance(result, dict) or result.get("remark") or not isinstance(result.get("elements" if provider=="overpass" else "features"),list):
+            if not isinstance(result, dict) or result.get("remark") or not isinstance(result.get("elements" if provider in ("overpass", "osm") else "features"),list):
                 raise ValueError("Provider returned incomplete data")
         except (OSError, ValueError, urllib.error.URLError) as exc:
             logging.getLogger(__name__).warning("%s request failed: %s (HTTP %s)", provider, type(exc).__name__, getattr(exc, "code", "unavailable"))
@@ -117,6 +117,39 @@ def remote_json(provider, url, fields, ttl, post=False):
             del _cache[min(_cache, key=lambda k: _cache[k][0])]
         _cache[key] = (time.monotonic(), result)
         return copy.deepcopy(result), False
+
+
+def osm_map_geometry(data):
+    """Join real OSM API node references, preserving the same way/node identities."""
+    nodes = {e.get("id"): e for e in data["elements"] if isinstance(e, dict) and e.get("type") == "node"}
+    ways = []
+    for element in data["elements"]:
+        if not isinstance(element, dict) or element.get("type") != "way" or not element.get("tags", {}).get("highway"):
+            continue
+        refs = element.get("nodes", [])
+        # Never bridge a missing node or create substitute coordinates.
+        if len(refs) < 2 or any(n not in nodes for n in refs):
+            continue
+        ways.append({**element, "geometry": [{"lat": nodes[n].get("lat"), "lon": nodes[n].get("lon")} for n in refs]})
+    return {"elements": ways}
+
+
+def road_geometry(bounds, query):
+    primary = configured_url("ROAD_HEALTH_OVERPASS_URL", "https://overpass-api.de/api/interpreter")
+    try:
+        data, cached = remote_json("overpass", primary, {"data": query}, 3600, timeout=8)
+        return data, cached, "Overpass", ""
+    except HTTPException as exc:
+        # An explicitly configured private service is not silently replaced.
+        fallback_enabled = os.environ.get("ROAD_HEALTH_OSM_FALLBACK", "true").lower() == "true"
+        if exc.status_code != 503 or not fallback_enabled or (primary != "https://overpass-api.de/api/interpreter" and "ROAD_HEALTH_OSM_MAP_URL" not in os.environ):
+            raise
+    if bounds.north - bounds.south > .02 or bounds.east - bounds.west > .02:
+        raise HTTPException(503, "Road-line service unavailable. Zoom into a smaller area (under 0.02 degrees) and load roads again. Saved inspections are preserved.")
+    url = configured_url("ROAD_HEALTH_OSM_MAP_URL", "https://api.openstreetmap.org/api/0.6/map.json")
+    bbox = f"{bounds.west:.6f},{bounds.south:.6f},{bounds.east:.6f},{bounds.north:.6f}"
+    data, cached = remote_json("osm", url, {"bbox": bbox}, 3600, timeout=15)
+    return osm_map_geometry(data), cached, "OpenStreetMap API", "Road lines loaded from OpenStreetMap's small-area API because Overpass is unavailable. Roads remain Not inspected until you link a capture."
 
 
 class Bounds(BaseModel):
@@ -265,7 +298,7 @@ def roads(bounds: Bounds):
     # Query fixed road classes only. No user-supplied Overpass program.
     b = bounds
     query = f'[out:json][timeout:20];way["highway"]({b.south:.6f},{b.west:.6f},{b.north:.6f},{b.east:.6f});out body geom;'
-    data, cached = remote_json("overpass", configured_url("ROAD_HEALTH_OVERPASS_URL", "https://overpass-api.de/api/interpreter"), {"data": query}, 3600)
+    data, cached, provider, notice = road_geometry(bounds, query)
     segments = osm_segments(data, bounds)
     if sum(len(s["coordinates"]) for s in segments) > 40000:
         raise HTTPException(413, "Too much geometry. Zoom into a smaller area.")
@@ -275,7 +308,8 @@ def roads(bounds: Bounds):
             db.execute("INSERT INTO roads VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET geometry=excluded.geometry,batch=excluded.batch", (s["id"], json.dumps(s), batch))
         db.execute("INSERT OR REPLACE INTO map_state VALUES ('batch',?)", (batch,))
         db.execute("DELETE FROM roads WHERE batch<>? AND id NOT IN (SELECT segment_id FROM inspections)", (batch,))
-    return {**network(), "cached": cached, "loaded_segments": len(segments), "bounds": bounds.model_dump(), "fetched_at": now()}
+    return {**network(), "cached": cached, "loaded_segments": len(segments), "bounds": bounds.model_dump(), "fetched_at": now(),
+            "geometry_provider": provider, "provider_notice": notice}
 
 
 @router.get("/network")

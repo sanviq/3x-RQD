@@ -104,6 +104,68 @@ def test_http_remote_endpoint_requires_tls(monkeypatch):
     with pytest.raises(HTTPException):maps.configured_url("TEST_MAP_URL","")
 
 
+def test_osm_api_fallback_joins_real_nodes_and_keeps_unknown_condition(monkeypatch, tmp_path):
+    monkeypatch.setenv("ROAD_HEALTH_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("ROAD_HEALTH_OVERPASS_URL", raising=False)
+    monkeypatch.delenv("ROAD_HEALTH_OSM_FALLBACK", raising=False)
+    calls = []
+    def remote(provider, url, fields, ttl, **kwargs):
+        calls.append(provider)
+        if provider == "overpass":
+            raise HTTPException(503, "Provider unavailable")
+        assert url == "https://api.openstreetmap.org/api/0.6/map.json"
+        assert fields["bbox"] == "77.000000,12.999000,77.002000,13.001000"
+        return {"elements": [
+            {"type": "node", "id": 1, "lon": 77, "lat": 13},
+            {"type": "node", "id": 2, "lon": 77.001, "lat": 13},
+            {"type": "way", "id": 10, "nodes": [1, 2], "tags": {"highway": "residential", "name": "Fixture road"}},
+            {"type": "way", "id": 20, "nodes": [2, 999], "tags": {"highway": "residential"}},
+        ]}, False
+    monkeypatch.setattr(maps, "remote_json", remote)
+    result = maps.roads(maps.Bounds(south=12.999, north=13.001, west=77, east=77.002))
+    assert calls == ["overpass", "osm"]
+    assert result["segments"][0]["id"] == "osm-way-10-1-2"
+    assert len(result["segments"]) == 1  # incomplete way cannot invent a road
+    assert result["segments"][0]["inspection"] is None
+    assert result["summary"]["average_quality"] is None
+    assert result["geometry_provider"] == "OpenStreetMap API"
+    assert "Overpass is unavailable" in result["provider_notice"]
+
+
+def test_custom_or_disabled_provider_is_not_silently_replaced(monkeypatch):
+    monkeypatch.setenv("ROAD_HEALTH_OVERPASS_URL", "https://private.example/interpreter")
+    monkeypatch.delenv("ROAD_HEALTH_OSM_MAP_URL", raising=False)
+    calls = []
+    def remote(provider, *a, **k):
+        calls.append(provider)
+        raise HTTPException(503, "Unavailable")
+    monkeypatch.setattr(maps, "remote_json", remote)
+    bounds = maps.Bounds(south=13, north=13.001, west=77, east=77.001)
+    with pytest.raises(HTTPException): maps.road_geometry(bounds, "query")
+    assert calls == ["overpass"]
+    calls.clear()
+    monkeypatch.delenv("ROAD_HEALTH_OVERPASS_URL")
+    monkeypatch.setenv("ROAD_HEALTH_OSM_FALLBACK", "false")
+    with pytest.raises(HTTPException): maps.road_geometry(bounds, "query")
+    assert calls == ["overpass"]
+
+
+def test_both_geometry_providers_failing_preserves_saved_inspection(monkeypatch, inspection_case):
+    data, _ = inspection_case
+    before = maps.save_inspection(data, "fixture-road", "test-token", [], 13, 77.0005, True, True)
+    monkeypatch.delenv("ROAD_HEALTH_OVERPASS_URL", raising=False)
+    monkeypatch.delenv("ROAD_HEALTH_OSM_FALLBACK", raising=False)
+    calls = []
+    def remote(provider, *a, **k):
+        calls.append(provider)
+        raise HTTPException(503, "Unavailable")
+    monkeypatch.setattr(maps, "remote_json", remote)
+    with pytest.raises(HTTPException):
+        maps.roads(maps.Bounds(south=13, north=13.001, west=77, east=77.001))
+    assert calls == ["overpass", "osm"]
+    assert maps.network() == before
+
+
 def test_location_confirmation_is_required():
     with pytest.raises(HTTPException) as e:maps.save_inspection(b"image","segment","token",[],13,77,False,False)
     assert e.value.status_code==422
