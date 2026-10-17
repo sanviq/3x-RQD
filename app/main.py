@@ -31,6 +31,16 @@ async def lifespan(app):
 app = FastAPI(title="Road Health", version="1.0.0", lifespan=lifespan)
 
 
+@app.middleware("http")
+async def fresh_frontend(request, call_next):
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        # HTML selects the hashed bundle. Reusing old HTML mixed old road-boundary
+        # handling with a newer backend after deployment.
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "model_loaded": getattr(app.state, "model", None) is not None,
@@ -60,6 +70,7 @@ def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="ro
     region=identify_road(decoded,capture_type,road_quad)
     road_quad=region["road_quad"]
     coverage=parse_surface_polygon(road_polygon or region.get("road_polygon"),road_quad)
+    region["road_polygon"]=[{"x":x,"y":y} for x,y in coverage]
     result, overlay = extract_features(decoded, mm_per_pixel, road_quad, coverage)
     result["road_region"]=region
     result['calibration']=calibration_metadata(result['physical_measurements'],mm_per_pixel,scale_uncertainty_percent)

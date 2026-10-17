@@ -166,7 +166,7 @@ export function useAnalysis() {
     return()=>window.clearTimeout(automaticTimer.current);
     // submit reads the settings from the render that selected this footprint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[selected,roadQuad,regionBusy,captureType,scale,scaleUncertainty,pitch,overlay,detectorSettings]);
+  },[selected,roadQuad,roadRegion?.road_polygon,regionBusy,captureType,scale,scaleUncertainty,pitch,overlay,detectorSettings]);
   const updateRoadQuad=(value:RoadQuad)=>{invalidate();setRoadRegion(null);setRegionError('');setRoadQuad(value)};
   const reset = () => {
     invalidate();setRoadRegion(null);setRegionError('');

@@ -49,7 +49,7 @@ export function AnalysisResults({result,demo=false,score,scoreBusy=false,scoreEr
       <div className="assessment-method"><Icon name="flask" size={15}/>{surface?surface.method.replaceAll('_',' '):methodLabels[assessment.method]}<span>{result.feature_version}</span></div>
     </section>
 
-    <section className="panel"><PanelTitle title="Calibrated measurements"/><div className="measurement-grid">
+    <section className="panel"><PanelTitle title="Physical measurements"><Badge>{physical.area_sq_ft===null?'Calibration required':'User-supplied scale'}</Badge></PanelTitle>{physical.area_sq_ft===null&&<p className="fine-print">Pixel measurements above are available. Physical dimensions need an already rectified road-only close-up and a measured reference scale; a perspective road photo cannot supply one uniform millimetre scale.</p>}<div className="measurement-grid">
       <Metric label="Original crop area" value={number(physical.area_sq_ft)} unit={physical.area_sq_ft===null?'':'ft²'} hint={physicalReason('area_sq_ft')}/>
       <Metric label="Candidate density" value={number(physical.chip_candidates_per_sq_ft)} unit={physical.chip_candidates_per_sq_ft===null?'':'candidates/ft²'} hint={physicalReason('chip_candidates_per_sq_ft')}/>
       <Metric label="Mean equivalent chip diameter" value={number(physical.mean_chip_diameter_mm)} unit={physical.mean_chip_diameter_mm===null?'':'mm'} hint={physicalReason('mean_chip_diameter_mm')}/>

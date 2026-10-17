@@ -1,5 +1,6 @@
 """Optional local YOLO inference, explicit fixtures, bounded tracking, diagnostic overlays."""
 import base64
+import hashlib
 import os
 import threading
 import time
@@ -237,8 +238,36 @@ def visuals(image, defects):
 
 
 def inspect(image, mode='demo', confidence=.35, resolution=640, mm_per_pixel=None,
-            inclination=None, seed=1, tracker=None, effect='none', strength=.5, config=None, fixture_defects=None):
+            inclination=None, seed=1, tracker=None, effect='none', strength=.5, config=None, fixture_defects=None, source_data=None):
     started=time.perf_counter()
+    if mode=='opencv':
+        from app.defects import detect_defects
+        from app.road_region import identify_road
+        from app.road_quality_score import settings
+        from app.inspection_evidence import render_snapshot
+        source=stress_image(image,effect,strength)
+        detect_started=time.perf_counter()
+        region=identify_road(source)
+        candidates=detect_defects(source,region['road_quad'],road_polygon=region['road_polygon'])
+        inference_ms=(time.perf_counter()-detect_started)*1000
+        ok,encoded=cv2.imencode('.png',source)
+        if not ok:raise ValueError('Could not prepare OpenCV inspection evidence.')
+        data=source_data if source_data is not None and effect=='none' else encoded.tobytes()
+        cfg,config_source=settings()
+        record={'detection':candidates,'config':cfg.model_dump(),'config_source':config_source,
+                'metadata':{'width':source.shape[1],'height':source.shape[0],'sha256':hashlib.sha256(data).hexdigest(),
+                            'source_file_unchanged':effect=='none','coordinate_system':'EXIF-oriented original pixels','quality':image_quality(source)}}
+        # Video/camera frames must not evict the user's signed still-image snapshot.
+        result=render_snapshot(source,record,[],mm_per_pixel,inclination,tracker=tracker)
+        result['notice']='OpenCV visual candidates from the uploaded pixels, using the same road-boundary and provisional scoring pipeline as the main inspection. Not trained YOLO predictions; review false positives and missed damage.'
+        if not candidates['defects'] or result['quality']['repeat_capture']:
+            result['assessment']['candidate_score']=result['assessment']['score']
+            result['assessment'].update(score=None,band='Unassessable',evidence_status='insufficient')
+        elapsed=(time.perf_counter()-started)*1000
+        result.update(effect=effect,synthetic_stress_test=effect!='none',road_polygon=candidates['road_polygon'])
+        result['timing']={'inference_ms':round(inference_ms,2),'pipeline_ms':round(elapsed,2),'pipeline_fps':round(1000/max(elapsed,.001),2),
+                          'includes':'OpenCV road appearance, candidate extraction, shared scoring and previews; excludes transport. OpenCV uses its fixed 1024 px maximum side, preserving aspect ratio.'}
+        return result
     original_h,original_w=image.shape[:2]
     scale=min(1,resolution/max(original_h,original_w))
     image=cv2.resize(image,(max(1,round(original_w*scale)),max(1,round(original_h*scale))),interpolation=cv2.INTER_AREA)

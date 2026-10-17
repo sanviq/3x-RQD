@@ -27,7 +27,7 @@ export interface AssessmentInput {
   defects:Defect[];width:number;height:number;mm_per_pixel:number|null;
   inclination:Record<string,unknown>;config:Record<string,number>;repaired:string[];
 }
-export interface DetectionSettings {mode:'demo'|'model';confidence:number;resolution:number;scale?:string;pitch?:string;roll?:string;inclination?:Record<string,unknown>}
+export interface DetectionSettings {mode:'demo'|'model'|'opencv';confidence:number;resolution:number;scale?:string;pitch?:string;roll?:string;inclination?:Record<string,unknown>}
 export interface DetectorStatus {model:{configured:boolean;loaded:boolean;mode:string;requires:string;supported_classes:string[];source?:string;notice?:string;confidence?:number;imgsz?:number;qualified?:boolean;automatic_detection_configured?:boolean};edge:string;storage:string}
 export interface VideoReport {frames:DetectionResult[];unique_tracks:number;source_fps:number|null;processing_s:number;sample_every:number;sample_limit:number;notice:string;provenance:string}
 export interface SavedRoad {id:string;name:string;latitude:number;longitude:number;distance_start_m:number;length_m:number;width_m:number;assessment:AssessmentInput;provenance:'demo'|'model'|'manual';evidence:Partial<DetectionResult['images']>;capture_notes:string;result:DefectAssessment}

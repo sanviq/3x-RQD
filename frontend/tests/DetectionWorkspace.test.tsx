@@ -48,6 +48,17 @@ describe('explicit real-photo detection',()=>{
   await screen.findByRole('button',{name:'Run trained detector'});
   expect(screen.getByText('Selected capture: road.jpg')).toBeInTheDocument();
  });
+ it('runs OpenCV without model weights and disables irrelevant YOLO controls',async()=>{
+  vi.mocked(detectorStatus).mockResolvedValue(status(false));
+  render(<DetectionWorkspace image={image} scale="" pitch=""/>);
+  await screen.findByText('Trained detector unavailable');
+  await userEvent.selectOptions(screen.getByLabelText('Defect detection mode'),'opencv');
+  expect(screen.getByLabelText('Detection confidence threshold')).toBeDisabled();
+  expect(screen.getByLabelText('Detection processing resolution')).toBeDisabled();
+  await userEvent.click(screen.getByRole('button',{name:'Run OpenCV detection'}));
+  await waitFor(()=>expect(inspectDefects).toHaveBeenCalledOnce());
+  expect(vi.mocked(inspectDefects).mock.calls[0][0].get('mode')).toBe('opencv');
+ });
 });
 
 describe('single inspection source',()=>{
@@ -58,6 +69,19 @@ describe('single inspection source',()=>{
   await waitFor(()=>expect(inspectReviewed).toHaveBeenCalledWith(image,'selected-snapshot',['CV2'],expect.any(AbortSignal)));
   expect(inspectDefects).not.toHaveBeenCalled();
   expect(screen.getByRole('button',{name:'Compare YOLO separately'})).toBeVisible();
+  expect(screen.queryByRole('button',{name:'Run trained detector'})).not.toBeInTheDocument();
+ });
+ it('returns from YOLO comparison to the selected OpenCV evidence using the mode selector',async()=>{
+  vi.mocked(detectorStatus).mockResolvedValue(status());
+  const setDetectorSettings=vi.fn();
+  const shared={detectorSettings:{mode:'opencv',confidence:.35,resolution:768},setDetectorSettings,detection:{score_token:'selected-snapshot'},detectionBusy:false,excludedDefects:[]} as unknown as AnalysisController;
+  render(<DetectionWorkspace image={image} scale="" pitch="" shared={shared}/>);
+  await waitFor(()=>expect(inspectReviewed).toHaveBeenCalled());
+  await userEvent.selectOptions(screen.getByLabelText('Defect detection mode'),'model');
+  await screen.findByRole('button',{name:'Run trained detector'});
+  await userEvent.selectOptions(screen.getByLabelText('Defect detection mode'),'opencv');
+  expect(setDetectorSettings).toHaveBeenCalledWith({mode:'opencv',confidence:.35,resolution:768});
+  expect(screen.getByLabelText('Defect detection mode')).toHaveValue('opencv');
   expect(screen.queryByRole('button',{name:'Run trained detector'})).not.toBeInTheDocument();
  });
 });
