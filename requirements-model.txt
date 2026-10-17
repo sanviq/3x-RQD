@@ -1,3 +1,6 @@
 -r requirements.txt
 # Optional: install only when using trusted, road-specific YOLO weights.
+# Ultralytics requires this distribution as well. Pin it to the SAME OpenCV
+# build as headless; a newer transitive wheel otherwise overwrites cv2 at runtime.
+opencv-python==4.14.0.94
 ultralytics>=8.3,<9
