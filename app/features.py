@@ -4,6 +4,7 @@ Bright regions are aggregate candidates, not verified individual stones.
 Dark thin regions can be cracks, joints, shadows, or aggregate boundaries.
 """
 from io import BytesIO
+import hashlib
 import warnings
 
 import cv2
@@ -193,7 +194,10 @@ def extract_features(image: np.ndarray, mm_per_pixel: float | None = None, road_
     notes.extend(["Segmented regions are aggregate appearance candidates, not verified stones. Shadows, paint and cavities can be mistaken for particles.",
                   "Boundary gaps are sampled nearest-boundary estimates among neighboring candidates, not verified particle spacing or binder measurements."])
     overlay=image.copy();overlay[~valid]=(overlay[~valid]*.3).astype(np.uint8);overlay[boundaries]=(0,255,0);overlay[linear]=(0,0,255)
-    return {"features":features,"physical_measurements":physical,"surface_measurements":measurements,
+    audit={name:hashlib.sha256(np.ascontiguousarray(value).tobytes()).hexdigest() for name,value in
+           {'decoded_pixels':native_image,'grayscale':gray,'smoothed':smooth,'contrast':normalized,
+            'candidate_mask':mask,'watershed_peaks':peaks,'accepted_labels':labels}.items()}
+    return {"features":features,"physical_measurements":physical,"surface_measurements":measurements,"processing_audit":audit,
             "surface_quality":{"status":"limited" if limited else "measured","issues":issues,"method":method,"model":model,"candidate_limit_reached":truncated},
             "chip_candidate_count":len(regions),"warnings":notes,
             "analysis_region":{"road_quad":[{"x":float(p['x'] if isinstance(p,dict) else p[0]),"y":float(p['y'] if isinstance(p,dict) else p[1])} for p in road_quad] if road_quad is not None else None,
