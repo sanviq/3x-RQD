@@ -5,11 +5,13 @@ The completed YOLOv8n checkpoint is available for **explicit experimental previe
 ## On the configured local machine
 
 1. Open **Surface inspection** and select your road photo.
-2. In **Detected road candidates**, keep **Trained YOLO · experimental** selected. This interactive upload request explicitly selects the saved preview and supplies the same detections to the score, drive and scenario lab.
+2. The main **Detected road candidates** viewer defaults to **Untrained visual candidates · OpenCV**. To compare the saved checkpoint, explicitly select **Trained YOLO · experimental**. The selected detector supplies the same detections to the score, drive and scenario lab.
 3. Start with confidence **0.35** and model image size **768 px**, the recorded evaluation settings. The controls in this panel rerun the selected photo. Lower confidence reveals additional candidates and may increase false alarms; a larger image size is not guaranteed to help.
-4. Review actual classes, boxes and confidence. The checkpoint still misses substantial damage. It supports potholes and three crack types; depressions and uneven patches are **not assessed**, rather than reported as zero.
+4. Review actual classes, boxes and confidence. The checkpoint still misses substantial damage. It supports potholes and three crack types. Depression and uneven-patch features remain available in the interface and OpenCV/manual-review workflow; this checkpoint does not provide trained predictions for those classes.
 
 **Untrained visual candidates · OpenCV** is a separate, explicit option. Its CV labels come from brightness/texture contours and can confuse small cracks, shadows and puddles with potholes. A requested trained model that fails returns an error; it never silently becomes OpenCV output. Without model weights, select the untrained option or configure the checkpoint below.
+
+OpenCV candidate extraction v2 separates strong cavity rims, reflected basins and thin cracks before deduplication. Strong-rim convex outlines are approximate, not validated segmentation masks. Small bright texture islands need stronger rim evidence. Overlap is checked using candidate polygons so neighbouring cavities with overlapping boxes can remain distinct. A conservative colour-based road proposal reduces scenery leakage, but still requires review. Regression examples exercise these changes; no population accuracy improvement is claimed.
 
 The additional **Road-defect analysis** panel retains its explicit **Run trained detector** button, individual crops, videos and camera controls. Both panels use the saved checkpoint; their confidence and image-size settings can differ.
 

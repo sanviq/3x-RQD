@@ -34,6 +34,36 @@ def test_smooth_and_low_detail_images_have_no_manufactured_defects():
     assert detect_defects(smooth)["defects"] == []
 
 
+def test_large_adjacent_cavities_and_a_separate_thin_crack_are_retained():
+    image=np.clip(145+np.random.default_rng(7).normal(0,2,(360,540,1)),0,255).astype(np.uint8).repeat(3,axis=2)
+    for center in [(165,230),(365,230)]:
+        cv2.ellipse(image,center,(68,28),0,0,360,(35,35,35),-1)
+        cv2.ellipse(image,(center[0],center[1]+3),(50,15),0,0,360,(180,180,180),-1)
+    cv2.line(image,(60,80),(250,115),(30,30,30),2)
+    defects=detect_defects(image)['defects']
+    for x,y in [(165,230),(365,230)]:
+        assert any(d['kind']=='Pothole' and cv2.pointPolygonTest(
+            np.asarray([[p['x']*539,p['y']*359] for p in d['polygon']],np.float32),
+            (x,y),False)>=0 for d in defects)
+    assert any(d['kind']=='Crack' and d['bbox']['y']<120 for d in defects)
+
+
+def test_automatic_photo_review_retains_major_cavities_without_scene_leakage():
+    from app.road_region import identify_road
+    image=cv2.imread(str(PHOTO))
+    proposal=identify_road(image)
+    # Human-inspected foreground regions, used only as regression examples.
+    result=detect_defects(image,proposal['road_quad'])
+    def contains(d,x,y):
+        polygon=np.asarray([[p['x']*639,p['y']*426] for p in d['polygon']],np.float32)
+        return cv2.pointPolygonTest(polygon,(x,y),False)>=0
+    for x,y in [(375,336),(300,234),(403,266),(480,261),(455,284)]:
+        assert any(d['kind']=='Pothole' and contains(d,x,y) for d in result['defects'])
+    assert any(d['kind']=='Crack' for d in result['defects'])
+    assert not any(contains(d,320,50) for d in result['defects'])
+    assert proposal['road_quad'][1]['x']-proposal['road_quad'][0]['x']<.5
+
+
 def test_original_and_road_polygons_round_trip():
     image = cv2.imread(str(PHOTO))
     result = detect_defects(image, QUAD)

@@ -51,9 +51,12 @@ def identify_road(image,capture_type="road_scene",road_quad=None):
         delta=(lab-center)/spread
         # Luminance tolerance permits shadowed asphalt while chroma rejects foliage/sky.
         affinity=(delta[:,:,0]/3)**2+delta[:,:,1]**2+delta[:,:,2]**2
-        mask=((affinity<9)&(hsv[:,:,1]<max(65,float(np.percentile(seed_hsv[:,:,1],85))+25))).astype(np.uint8)
+        # A conservative chroma neighbourhood prevents a narrow connection through
+        # neutral tree trunks/sky from expanding the proposed road across scenery.
+        mask=((affinity<3)&(hsv[:,:,1]<max(65,float(np.percentile(seed_hsv[:,:,1],85))+25))).astype(np.uint8)
         kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
         mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,kernel)
+        mask=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernel)
     count,labels,stats,_=cv2.connectedComponentsWithStats(mask.astype(np.uint8),8)
     chosen=0;best=0
     seed_area=np.zeros_like(mask);seed_area[round(sh*.74):round(sh*.98),round(sw*.25):round(sw*.75)]=1

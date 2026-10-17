@@ -13,18 +13,25 @@ const post=async(route,bytes=photo,roadQuad=quad,extra={})=>{
   return {status:response.status,value:await response.json()};
 };
 let checks=0;
+// Score sessions intentionally have fresh IDs and timestamps on every request.
+// Determinism concerns the image evidence and calculation, not those identifiers.
+const stableEvidence=value=>{
+  const copy=structuredClone(value);delete copy.score_token;
+  if(copy.road_quality_score){delete copy.road_quality_score.snapshot_id;delete copy.road_quality_score.generated_at}
+  return copy;
+};
 const health=await (await fetch(base+'/health')).json();
-assert.equal(health.defect_version,'opencv-candidates-v1');checks++;
+assert.equal(health.defect_version,'opencv-candidates-v2');checks++;
 const first=await post('/detect-defects');assert.equal(first.status,200);
 const d=first.value;assert.ok(d.defects.length>0);assert.equal(d.requires_review,true);checks++;
 assert.ok(d.defects.some(v=>v.kind==='Pothole'&&v.bbox.x<=375&&v.bbox.x+v.bbox.width>=375&&v.bbox.y<=336&&v.bbox.y+v.bbox.height>=336));checks++;
 assert.equal(d.confidence_calibrated,false);assert.ok(d.defects.every(v=>v.depth_mm===null&&v.physical_dimensions===null));checks++;
 assert.ok(d.defects.every(v=>v.polygon.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1)&&v.confidence>=0&&v.confidence<=1));checks++;
-const second=await post('/detect-defects');assert.deepEqual(second.value,d);checks++;
+const second=await post('/detect-defects');assert.deepEqual(stableEvidence(second.value),stableEvidence(d));checks++;
 const empty=await post('/detect-defects',smooth);assert.equal(empty.status,200);assert.deepEqual(empty.value.defects,[]);checks++;
 assert.equal((await post('/detect-defects',photo,'[]')).status,422);checks++;
 assert.equal((await post('/detect-defects',Buffer.from('not an image'))).status,422);checks++;
-const analysis=await post('/analyze');assert.equal(analysis.status,200);assert.equal(analysis.value.assessment.road_quality_index,null);assert.deepEqual(analysis.value.defect_detection,d);checks++;
+const analysis=await post('/analyze');assert.equal(analysis.status,200);assert.equal(analysis.value.assessment.road_quality_index,null);assert.deepEqual(stableEvidence(analysis.value.defect_detection),stableEvidence(d));checks++;
 assert.equal(createHash('sha256').update(photo).digest('hex'),createHash('sha256').update(await readFile(new URL('../../tests/fixtures/pothole-road.jpg',import.meta.url))).digest('hex'));checks++;
 
 const region=analysis.value.analysis_region;

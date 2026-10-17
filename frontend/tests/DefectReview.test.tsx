@@ -9,10 +9,11 @@ describe('detector identity and class coverage in the main photo panel',()=>{
   render(<DefectReview url="blob:photo" detection={raw as DefectDetection} onRetry={()=>{}}/>);
   expect(screen.getByText(/Untrained OpenCV contours/)).toBeVisible();
  });
- it('states that unsupported classes are unassessed, without showing them as detected classes',()=>{
+ it('retains all four feature categories and explains the model class limitation',()=>{
   render(<DefectReview url="blob:photo" detection={{...raw,method:'yolo_rdd_detection',defects:[]} as DefectDetection} onRetry={()=>{}}/>);
-  expect(screen.getByText('Depressions and uneven patches: not assessed.')).toBeVisible();
-  expect(screen.queryByText('Depression',{exact:true})).not.toBeInTheDocument();
+  expect(screen.getByText('Depression and uneven-patch features are retained.')).toBeVisible();
+  expect(screen.getByText('Depression · OpenCV / manual review')).toBeVisible();
+  expect(screen.getByText('Uneven patch · OpenCV / manual review')).toBeVisible();
   expect(screen.getByText(/Trained YOLO predictions from your photo/)).toBeVisible();
  });
  it('lets the user trade recall for false alarms in the same photo review',()=>{

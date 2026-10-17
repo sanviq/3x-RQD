@@ -26,7 +26,7 @@ export function useAnalysis() {
   const [detectionBusy,setDetectionBusy]=useState(false);
   const [detectionError,setDetectionError]=useState('');
   const [detectionRevision,setDetectionRevision]=useState(0);
-  const [detectorSettings,setDetectorSettings]=useState<RoadDetectorSettings>({mode:'model',confidence:.35,resolution:768});
+  const [detectorSettings,setDetectorSettings]=useState<RoadDetectorSettings>({mode:'opencv',confidence:.35,resolution:768});
   const detectorKey=JSON.stringify(detectorSettings);
   const quadKey=JSON.stringify(roadQuad);
   const detection=detectionSource?.file===selected?.file&&detectionSource?.quad===quadKey&&detectionSource?.revision===detectionRevision?detectionResult:null;
