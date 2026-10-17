@@ -62,7 +62,10 @@ def identify_road(image,capture_type="road_scene",road_quad=None):
         if overlap>best:best=overlap;chosen=i
     mask=(labels==chosen).astype(np.uint8) if chosen else np.zeros_like(mask)
     area=float(mask.mean());gray=cv2.cvtColor(small,cv2.COLOR_BGR2GRAY)
-    if area<.06 or gray.std()<2 or np.mean(gray<5)>.95 or np.mean(gray>250)>.95:
+    # Road/scenery can share luminance yet have strong chromatic boundaries.
+    # Check colour detail as well as brightness before discarding the mask.
+    colour_detail=cv2.cvtColor(small,cv2.COLOR_BGR2LAB).reshape(-1,3).std(axis=0).max()
+    if area<.06 or (gray.std()<2 and colour_detail<2) or np.mean(gray<5)>.95 or np.mean(gray>250)>.95:
         return result(FULL_QUAD,method,"needs_outline","A reliable road boundary could not be separated from this capture. Outline the road manually; use a sharper, evenly lit image with visible road edges.",model,area)
     q=_quad_from_mask(mask)
     if q is None:return result(FULL_QUAD,method,"needs_outline","The candidate surface is too narrow or fragmented. Adjust the road outline before interpreting the results.",model,area)

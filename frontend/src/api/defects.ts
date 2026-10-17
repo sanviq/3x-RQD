@@ -1,5 +1,5 @@
 import {isRoadQualityScore} from './qualityScore';
-import type { DefectDetection } from '../types/api';
+import type { DefectDetection, RoadDetectorSettings } from '../types/api';
 import type { RoadQuad } from '../simulation/projection';
 import { request, ApiError, isRecord, finiteNumber } from './client';
 const point=(p:unknown)=>isRecord(p)&&finiteNumber(p.x)&&finiteNumber(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1;
@@ -24,9 +24,11 @@ export function isDefectDetection(v:unknown):v is DefectDetection {
         : d.provenance==='yolo_prediction'&&['D00','D10','D20','D40'].includes(String(d.detection_code))&&d.kind===(d.detection_code==='D40'?'Pothole':'Crack')&&typeof d.detection_label==='string'&&['bounding_box_schematic','model_segmentation'].includes(String(d.geometry_source)));
   });
 }
-export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal):Promise<DefectDetection> {
+export async function detectRoadDefects(image:File,quad:RoadQuad,signal?:AbortSignal,settings?:RoadDetectorSettings):Promise<DefectDetection> {
   const body=new FormData();body.append('image',image);body.append('road_quad',JSON.stringify(quad));
+  if(settings){body.append('detector_mode',settings.mode);body.append('confidence',String(settings.confidence));body.append('resolution',String(settings.resolution))}
   const value=await request('/detect-defects',{method:'POST',body,signal},45000);
   if(!isDefectDetection(value))throw new ApiError('The backend did not return compatible defect geometry. Restart the updated API.');
+  if(settings?.mode==='model'&&value.method!=='yolo_rdd_detection')throw new ApiError('The backend returned untrained contours instead of the requested model. Restart the updated API or select Untrained visual candidates.');
   return value;
 }

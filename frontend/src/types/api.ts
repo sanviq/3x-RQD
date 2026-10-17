@@ -49,11 +49,12 @@ export interface AnalysisResponse {
   inclination: { degrees: number | null; source: 'user_supplied_sensor' | 'unavailable' };
   overlay_png_base64?: string;
 }
-export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; mmPerPixel?: number; scaleUncertaintyPercent?:number; pitchDegrees?: number; includeOverlay: boolean }
+export interface AnalysisInput { image: File; captureType?: CaptureType; roadQuad?:[DefectPoint,DefectPoint,DefectPoint,DefectPoint]; mmPerPixel?: number; scaleUncertaintyPercent?:number; pitchDegrees?: number; includeOverlay: boolean; detectorSettings?:RoadDetectorSettings }
 export type Page = 'overview' | 'inspection' | 'network' | 'planner' | 'lab' | 'evaluation' | 'materials';
 export type Weights = [number, number, number, number];
 export interface DefectPoint {x:number;y:number}
 export type DetectedKind='Pothole'|'Crack'|'Depression'|'Uneven surface';
+export interface RoadDetectorSettings {mode:'model'|'opencv';confidence:number;resolution:number}
 export interface RoadDefect {
   id:string;kind:DetectedKind;confidence:number;severity:number;severity_label:'Low'|'Moderate'|'High';
   polygon:DefectPoint[];road_polygon:DefectPoint[];
@@ -64,6 +65,8 @@ export interface RoadDefect {
   evidence:{local_contrast?:number;boundary_strength?:number;solidity?:number;detection_code?:string;detection_label?:string};
 }
 export interface DefectDetection {
+  settings?:RoadDetectorSettings;
+  class_coverage?:Partial<Record<DetectedKind,'trained'|'not_trained'>>;
   road_quality_score?:RoadQualityScore|null;score_token?:string;score_expires_seconds?:number;score_error?:string;
   version:string;method:'opencv_multiscale_contours'|'yolo_rdd_detection';coordinate_system:'normalized_exif_oriented_original';
   road_quad:[DefectPoint,DefectPoint,DefectPoint,DefectPoint];image:{width:number;height:number};

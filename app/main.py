@@ -38,9 +38,9 @@ def health():
             "surface_model_error": getattr(app.state,"model_error",None)}
 
 
-def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None):
+def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None,detector_mode='auto'):
     region=identify_road(decoded,road_quad=road_quad)
-    detected=detect_defects(decoded,region["road_quad"],confidence,resolution)
+    detected=detect_defects(decoded,region["road_quad"],confidence,resolution,mode=detector_mode)
     detected["road_region"]=region
     h,w=decoded.shape[:2]
     roi=np.zeros((h,w),np.uint8)
@@ -51,7 +51,7 @@ def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None
     return attach_score(detected,decoded,data)
 
 
-def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None):
+def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="road_scene", road_quad=None, scale_uncertainty_percent=None, detector_mode='auto', confidence=None, resolution=None):
     if capture_type != "surface_crop":
         mm_per_pixel = None
     decoded = decode_image(data)
@@ -60,7 +60,12 @@ def analyze(data, mm_per_pixel, pitch_degrees, include_overlay, capture_type="ro
     result, overlay = extract_features(decoded, mm_per_pixel, road_quad)
     result["road_region"]=region
     result['calibration']=calibration_metadata(result['physical_measurements'],mm_per_pixel,scale_uncertainty_percent)
-    result["defect_detection"] = scored_detection(decoded, data, road_quad)
+    try:
+        result["defect_detection"] = scored_detection(decoded, data, road_quad, confidence, resolution, detector_mode)
+    except ValueError as exc:
+        # Keep real texture measurements when the explicitly selected detector fails.
+        # Do not substitute a different detector or a condition score.
+        result["warnings"].append(str(exc))
     result["assessment"] = score(result["features"], getattr(app.state, "model", None), capture_type)
     result["capture_type"] = capture_type
     result["warnings"].extend(result["assessment"]["reasons"])
@@ -103,6 +108,9 @@ async def analyze_road(
     capture_type: Literal["road_scene", "surface_crop"] = Form("road_scene"),
     road_quad: str | None = Form(None),
     scale_uncertainty_percent: float | None = Form(None, ge=0, lt=100),
+    detector_mode: Literal['auto','model','opencv'] = Form('auto'),
+    confidence: float | None = Form(None, ge=0, le=1),
+    resolution: int | None = Form(None, ge=320, le=1280),
 ):
     try:
         data = await image.read(MAX_BYTES + 1)
@@ -113,7 +121,7 @@ async def analyze_road(
     try:
         if scale_uncertainty_percent is not None and (capture_type!='surface_crop' or mm_per_pixel is None):
             raise ValueError('Scale uncertainty requires a surface crop with mm_per_pixel.')
-        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad) if road_quad is not None else None,scale_uncertainty_percent)
+        return await run_in_threadpool(analyze, data, mm_per_pixel, pitch_degrees, include_overlay, capture_type, parse_quad(road_quad) if road_quad is not None else None,scale_uncertainty_percent,detector_mode,confidence,resolution)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -124,6 +132,7 @@ async def detect_uploaded_defects(
     road_quad: str | None = Form(None),
     confidence: float | None = Form(None, ge=0, le=1),
     resolution: int | None = Form(None, ge=320, le=1280),
+    detector_mode: Literal['auto','model','opencv'] = Form('auto'),
 ):
     """Detect actual candidates and attach an explicitly provisional defect-area score."""
     try:
@@ -134,7 +143,7 @@ async def detect_uploaded_defects(
         raise HTTPException(413, "Image exceeds the 12 MiB upload limit.")
     try:
         quad = parse_quad(road_quad) if road_quad is not None else None
-        return await run_in_threadpool(lambda: scored_detection(decode_image(data), data, quad, confidence, resolution))
+        return await run_in_threadpool(lambda: scored_detection(decode_image(data), data, quad, confidence, resolution, detector_mode))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

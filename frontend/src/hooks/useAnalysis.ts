@@ -5,7 +5,7 @@ import type {RoadQualityScore} from '../api/qualityScore';
 import { detectRoadDefects } from '../api/defects';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { analyzeRoad } from '../api/roadQuality';
-import type { AnalysisResponse, CaptureType, DefectDetection } from '../types/api';
+import type { AnalysisResponse, CaptureType, DefectDetection, RoadDetectorSettings } from '../types/api';
 import { fullQuad, sceneQuad } from '../simulation/projection';
 import type { RoadQuad } from '../simulation/projection';
 import { inspectImage, optionalNumber } from '../utils/imageValidation';
@@ -26,6 +26,8 @@ export function useAnalysis() {
   const [detectionBusy,setDetectionBusy]=useState(false);
   const [detectionError,setDetectionError]=useState('');
   const [detectionRevision,setDetectionRevision]=useState(0);
+  const [detectorSettings,setDetectorSettings]=useState<RoadDetectorSettings>({mode:'model',confidence:.35,resolution:768});
+  const detectorKey=JSON.stringify(detectorSettings);
   const quadKey=JSON.stringify(roadQuad);
   const detection=detectionSource?.file===selected?.file&&detectionSource?.quad===quadKey&&detectionSource?.revision===detectionRevision?detectionResult:null;
   useEffect(()=>{
@@ -35,12 +37,12 @@ export function useAnalysis() {
     const abort=new AbortController();let cancelled=false;
     setDetectionBusy(true);
     const timer=window.setTimeout(()=>{
-      detectRoadDefects(selected.file,roadQuad,abort.signal).then(value=>{if(!cancelled){setDetection(value);setDetectionSource({file:selected.file,quad:JSON.stringify(roadQuad),revision:detectionRevision})}})
+      detectRoadDefects(selected.file,roadQuad,abort.signal,detectorSettings).then(value=>{if(!cancelled){setDetection(value);setDetectionSource({file:selected.file,quad:JSON.stringify(roadQuad),revision:detectionRevision})}})
         .catch(error=>{if(!cancelled&&!abort.signal.aborted)setDetectionError((error as Error).message)})
         .finally(()=>{if(!cancelled)setDetectionBusy(false)});
     },250);
     return()=>{cancelled=true;window.clearTimeout(timer);abort.abort()};
-  },[selected,roadQuad,detectionRevision,regionBusy]);
+  },[selected,roadQuad,detectionRevision,regionBusy,detectorSettings]);
 
 
   const [scoreRecord,setScoreRecord]=useState<{key:string;value:RoadQualityScore}|null>(null);
@@ -150,7 +152,7 @@ export function useAnalysis() {
     controller.current = requestController;
     setBusy(true); setResult(null); setNotice('');
     try {
-      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, scaleUncertaintyPercent:captureType==='surface_crop'?uncertainty:undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay }, requestController.signal);
+      const response = await analyzeRoad({ image: selected.file, captureType, roadQuad, mmPerPixel: captureType === 'surface_crop' ? parsedScale.value : undefined, scaleUncertaintyPercent:captureType==='surface_crop'?uncertainty:undefined, pitchDegrees: parsedPitch.value, includeOverlay: overlay, detectorSettings }, requestController.signal);
       if (mounted.current && version === revision.current.value) { setResult(response); setNotice('Analysis complete. Results are ready.'); }
     } catch (error) {
       if (mounted.current && version === revision.current.value && !requestController.signal.aborted) setErrors({ request: (error as Error).message });
@@ -164,7 +166,7 @@ export function useAnalysis() {
     return()=>window.clearTimeout(automaticTimer.current);
     // submit reads the settings from the render that selected this footprint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[selected,roadQuad,regionBusy,captureType,scale,scaleUncertainty,pitch,overlay]);
+  },[selected,roadQuad,regionBusy,captureType,scale,scaleUncertainty,pitch,overlay,detectorSettings]);
   const updateRoadQuad=(value:RoadQuad)=>{invalidate();setRoadRegion(null);setRegionError('');setRoadQuad(value)};
   const reset = () => {
     invalidate();setRoadRegion(null);setRegionError('');
@@ -174,6 +176,7 @@ export function useAnalysis() {
     currentImage.current = null; setSelected(null); setScale(''); setScaleUncertainty(''); setPitch(''); setOverlay(true);
   };
   return {
+    detectorSettings,setDetectorSettings:(value:RoadDetectorSettings)=>{if(JSON.stringify(value)!==detectorKey){invalidate(true);setDetection(null);setDetectionSource(null);setExcludedDefects([]);setDetectorSettings(value)}},
     roadRegion,regionBusy,regionError,retryRoadRegion:()=>{if(selected){invalidate();void locateRegion(selected,captureType)}},
     qualityScore,qualityScoreBusy,qualityScoreError,retryQualityScore:()=>setScoreRevision(n=>n+1),
     excludedDefects,toggleDefect:(id:string)=>setExcludedDefects(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]),

@@ -32,6 +32,8 @@ def test_preview_is_explicit_hashed_and_never_qualifies_automatic_detection(tmp_
     assert selection['configured'] and selection['qualified'] is False
     assert selection['source']=='interactive_experimental_preview'
     assert detection.model_status()['automatic_detection_configured'] is False
+    assert detection.model_status()['supported_classes']==['crack','pothole']
+    assert detection.model_status()['supported_detection_codes']==['D00','D10','D20','D40']
     assert 'path' not in detection.model_status()
     checkpoint.write_bytes(b'changed')
     assert not selected_model(allow_experimental=True)['configured']

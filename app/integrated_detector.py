@@ -7,9 +7,26 @@ from app import detection
 from app.model_registry import selected_model
 
 
-def _detect_defects(image, road_quad=None, confidence=None, resolution=None):
-    selection=selected_model(detection.MODEL_PATH)
+def _unique_defects(defects):
+    """Suppress duplicate boxes per RDD class, retaining the strongest prediction."""
+    kept=[]
+    for defect in sorted(defects,key=lambda d:-d.confidence):
+        if any((defect.detection_code or defect.class_name)==(other.detection_code or other.class_name)
+               and detection.iou(defect.bbox,other.bbox)>.5 for other in kept):
+            continue
+        kept.append(defect)
+    return kept
+
+
+def _detect_defects(image, road_quad=None, confidence=None, resolution=None, mode='auto'):
+    if mode not in ('auto','model','opencv'):
+        raise ValueError('Choose auto, model or opencv detection.')
+    selection=selected_model(detection.MODEL_PATH,allow_experimental=True) if mode=='model' else selected_model(detection.MODEL_PATH)
+    if mode=='opencv':
+        return opencv_candidates(image,road_quad)
     if not selection['configured']:
+        if mode=='model':
+            raise ValueError('No trained road detector is available. Configure the saved experimental checkpoint or choose Untrained visual candidates.')
         result=opencv_candidates(image,road_quad)
         result['model_status']=detection.model_status()
         result['warnings'].append('No accepted trained detector is active. These are OpenCV candidates, not YOLO predictions.')
@@ -21,6 +38,8 @@ def _detect_defects(image, road_quad=None, confidence=None, resolution=None):
     defects=detection.predict(image,'model',confidence,resolution)
     if any(d.detection_code not in detection.RDD_LABELS for d in defects):
         raise ValueError('The driving adapter requires a four-class RDD2022 detector; other classes must not be silently mapped to cracks.')
+    raw_count=len(defects)
+    defects=_unique_defects(defects)
     homography=cv2.getPerspectiveTransform(q,np.asarray(FULL_QUAD,np.float32))
     items=[]
     for d in defects[:80]:
@@ -63,19 +82,25 @@ def _detect_defects(image, road_quad=None, confidence=None, resolution=None):
             'road_quad':[{'x':float(x),'y':float(y)} for x,y in q],
             'image':{'width':w,'height':h},'defects':items,
             'confidence_calibrated':False,'requires_review':True,'model_status':detection.model_status(),
+            'settings':{'mode':mode,'confidence':confidence,'resolution':resolution},
+            'postprocessing':{'method':'same_rdd_class_nms','iou_threshold':.5,'duplicates_removed':raw_count-len(defects)},
+            'class_coverage':{'Pothole':'trained','Crack':'trained','Depression':'not_trained','Uneven surface':'not_trained'},
             'evidence_status':'detections_available' if items and not quality['repeat_capture'] else 'insufficient',
             'quality':quality,'road_health_score':None,'inference_ms':round((time.perf_counter()-start)*1000,2),
             'warnings':['YOLO predictions require human review. Detection confidence is not road quality.',
+                        'Overlapping boxes of the same RDD class are suppressed at IoU 0.50. This preview filter was checked on validation; it has no new held-out accuracy claim.',
                         'Only D00, D10, D20 and D40 are supported; other damage is not established as absent.',
                         'Geometry source is recorded per defect: supplied model masks retain their contours; box-only detections use schematic rectangles. Neither establishes measured physical damage area.',
                         'Depth, physical severity and driving response remain simulation assumptions.',
                         'No detections does not establish a healthy road.']+quality['flags']}
 
 
-def detect_defects(image,road_quad=None,confidence=None,resolution=None):
+def detect_defects(image,road_quad=None,confidence=None,resolution=None,mode='auto'):
     try:
-        return _detect_defects(image,road_quad,confidence,resolution)
+        return _detect_defects(image,road_quad,confidence,resolution,mode)
     except (ValueError,RuntimeError,OSError,ImportError,AttributeError,cv2.error) as exc:
+        if mode=='model':
+            raise ValueError('Trained detector could not run: '+str(exc)[:250]) from exc
         # A broken optional model must not discard valid surface measurements.
         result=opencv_candidates(image,road_quad)
         result['model_failure']={'type':type(exc).__name__,'message':str(exc)[:250],'fallback':'opencv_multiscale_contours'}

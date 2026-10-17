@@ -1,6 +1,6 @@
 import {act,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {beforeEach,describe,expect,it,vi} from 'vitest';
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {DetectionWorkspace} from '../src/components/DetectionWorkspace';
 import {detectorStatus,inspectDefects} from '../src/api/roadHealth';
 import type {DetectorStatus} from '../src/api/roadHealth';
@@ -10,6 +10,7 @@ vi.mock('../src/api/roadHealth',async()=>({...await vi.importActual('../src/api/
 const status=(configured=true):DetectorStatus=>({model:{configured,loaded:false,mode:configured?'model':'demo',requires:'local weights',supported_classes:['crack','pothole'],source:'interactive_experimental_preview',qualified:false,confidence:.35,imgsz:768,notice:'Experimental trained model; qualification failed. Review predictions.'},edge:'cpu',storage:'local'});
 const image=new File(['fixture-image-not-decoded-in-this-mocked-client-test'],'road.jpg',{type:'image/jpeg'});
 beforeEach(()=>{vi.stubEnv('VITE_ENABLE_DEMOS','true');vi.mocked(detectorStatus).mockReset();vi.mocked(inspectDefects).mockReset();vi.mocked(inspectDefects).mockRejectedValue(new Error('Mock request complete'));});
+afterEach(()=>vi.unstubAllEnvs());
 describe('explicit real-photo detection',()=>{
  it('uses the available trained model and its evaluated resolution instead of fixture annotations',async()=>{
   vi.mocked(detectorStatus).mockResolvedValue(status());

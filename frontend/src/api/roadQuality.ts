@@ -67,6 +67,7 @@ export async function analyzeRoad(input: AnalysisInput, signal?: AbortSignal): P
   if(input.scaleUncertaintyPercent!==undefined)body.append('scale_uncertainty_percent',String(input.scaleUncertaintyPercent));
   if (input.pitchDegrees !== undefined) body.append('pitch_degrees', String(input.pitchDegrees));
   body.append('include_overlay', String(input.includeOverlay));
+  if(input.detectorSettings){body.append('detector_mode',input.detectorSettings.mode);body.append('confidence',String(input.detectorSettings.confidence));body.append('resolution',String(input.detectorSettings.resolution))}
   const value = await request('/analyze', { method: 'POST', body, signal });
   if (!isAnalysisResponse(value)) throw new ApiError('The service returned an incomplete or incompatible analysis result. Check the backend version.');
   value.capture_type ??= input.captureType ?? 'road_scene';

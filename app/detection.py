@@ -23,16 +23,24 @@ ALIASES = {'potholes': 'pothole', 'longitudinal_crack': 'crack', 'transverse_cra
 RDD_LABELS = {'D00': 'Longitudinal crack', 'D10': 'Transverse crack',
               'D20': 'Alligator crack', 'D40': 'Pothole'}
 RDD_CODES = {**{c.lower(): c for c in RDD_LABELS}, 'longitudinal_crack': 'D00',
-             'transverse_crack': 'D10', 'alligator_crack': 'D20', 'pothole': 'D40'}
+             'transverse_crack': 'D10', 'alligator_crack': 'D20', 'pothole': 'D40', 'potholes':'D40'}
 
 
 def model_status():
     selection=selected_model(MODEL_PATH,allow_experimental=True)
+    known_rdd=selection.get('source') in ('interactive_experimental_preview','evaluated_local_registry')
+    if _model is not None and _loaded_path==selection.get('path'):
+        raw=[str(n).lower().replace(' ','_').replace('-','_') for n in _model.names.values()]
+        supported=sorted({ALIASES.get(n,n) for n in raw if ALIASES.get(n,n) in CLASSES})
+        codes=sorted({RDD_CODES[n] for n in raw if n in RDD_CODES})
+    else:
+        supported=['crack','pothole'] if known_rdd else []
+        codes=list(RDD_LABELS) if known_rdd else []
     return {**{k:v for k,v in selection.items() if k!='path'},
             'automatic_detection_configured':selected_model(MODEL_PATH)['configured'],
             'loaded': _model is not None, 'mode': 'model' if selection['configured'] else 'demo',
             'requires': 'Trusted road-specific YOLO detection/segmentation weights and requirements-model.txt. Generic COCO weights do not recognize road-defect classes.',
-            'supported_classes': CLASSES}
+            'supported_classes':supported,'supported_detection_codes':codes,'adapter_classes':CLASSES}
 
 
 def encode(image):
