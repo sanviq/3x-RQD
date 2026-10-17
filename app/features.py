@@ -15,6 +15,10 @@ from scipy.spatial import cKDTree
 from skimage import feature, measure, morphology, segmentation
 from app.mask_models import predict_mask
 
+# A hosted CPU quota can be smaller than the host's advertised core count.
+# Avoid oversubscribed image-processing pools on Render and edge devices.
+cv2.setNumThreads(1)
+
 MAX_BYTES = 12 * 1024 * 1024
 MAX_PIXELS = 20_000_000
 FEATURE_VERSION = "surface-v4"

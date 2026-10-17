@@ -47,7 +47,7 @@ def health():
     return {"status": "ok", "model_loaded": getattr(app.state, "model", None) is not None,
             "feature_version": FEATURE_VERSION, "defect_version": DETECTOR_VERSION,
             "surface_model_error": getattr(app.state,"model_error",None),
-            "processing_runtime":{"opencv":cv2.__version__,**{name:version(name) for name in ('numpy','scipy','scikit-image','Pillow')}}}
+            "processing_runtime":{"opencv":cv2.__version__,"opencv_threads":cv2.getNumThreads(),**{name:version(name) for name in ('numpy','scipy','scikit-image','Pillow')}}}
 
 
 def scored_detection(decoded,data,road_quad=None,confidence=None,resolution=None,detector_mode='auto',road_polygon=None):
